@@ -1,3 +1,21 @@
+Metadata-Version: 2.4
+Name: cybacktrader
+Version: 0.1.0
+Summary: Cython-accelerated, drop-in compatible interface for backtrader
+Author: cybacktrader maintainers
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+Provides-Extra: dev
+Requires-Dist: Cython>=3.0; extra == "dev"
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Provides-Extra: plotting
+Requires-Dist: matplotlib; extra == "plotting"
+Dynamic: license-file
+Dynamic: requires-python
+
 # cybacktrader
 
 **Cython-accelerated, drop-in compatible interface for backtrader**

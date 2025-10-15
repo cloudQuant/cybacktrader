@@ -1,0 +1,9 @@
+numpy
+
+[dev]
+Cython>=3.0
+pytest>=7.0
+pytest-cov
+
+[plotting]
+matplotlib
