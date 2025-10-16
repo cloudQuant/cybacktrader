@@ -6,7 +6,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.atr import ATR
-from cybacktrader.indicators.basicops import And, If
+from cybacktrader.functions import And, If
 from cybacktrader.indicators.mabase import MovAv
 
 # ADX相关的指标

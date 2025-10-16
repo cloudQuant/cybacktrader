@@ -33,6 +33,31 @@ try:
 except ImportError:
     pass
 
-# Skip calmar, leverage, logreturnsrolling, periodstats, positions, pyfolio, 
-# sharpe_ratio_stats, total_value, transactions, vwr to avoid circular imports
+try:
+    from cybacktrader.analyzers.total_value import *
+except ImportError:
+    pass
+
+try:
+    from cybacktrader.analyzers.transactions import *
+except ImportError:
+    pass
+
+try:
+    from cybacktrader.analyzers.vwr import *
+except ImportError:
+    pass
+
+try:
+    from cybacktrader.analyzers.periodstats import *
+except ImportError:
+    pass
+
+try:
+    from cybacktrader.analyzers.calmar import *
+except ImportError:
+    pass
+
+# Skip logreturnsrolling, positions, pyfolio, sharpe_ratio_stats, leverage
+# to avoid potential circular imports or external dependencies
 # They can be imported directly when needed

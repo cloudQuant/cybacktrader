@@ -78,7 +78,7 @@ class TimeReturn(TimeFrameAnalyzerBase):
     def start(self):
         super(TimeReturn, self).start()
         if self.p.fund is None:
-            self._fundmode = self.strategy.broker.fundmode
+            self._fundmode = self.strategy.broker.fundmode if (self.strategy is not None) else False
         else:
             self._fundmode = self.p.fund
         # 开始价值
@@ -88,10 +88,11 @@ class TimeReturn(TimeFrameAnalyzerBase):
         # 如果参数data是None的时候
         if self.p.data is None:
             # keep the initial portfolio value if not tracing a data
-            if not self._fundmode:
-                self._lastvalue = self.strategy.broker.getvalue()
-            else:
-                self._lastvalue = self.strategy.broker.fundvalue
+            if self.strategy is not None:
+                if not self._fundmode:
+                    self._lastvalue = self.strategy.broker.getvalue()
+                else:
+                    self._lastvalue = self.strategy.broker.fundvalue
 
     # 通知fund信息
     def notify_fund(self, cash, value, fundvalue, shares):
@@ -126,6 +127,9 @@ class TimeReturn(TimeFrameAnalyzerBase):
         # Calculate the return
         super(TimeReturn, self).next()
         # self.dtkey是analyzer中设置的属性值，一般是一个period结束的日期
-        self.rets[self.dtkey] = (self._value / self._value_start) - 1.0
+        if self._value_start != 0.0:
+            self.rets[self.dtkey] = (self._value / self._value_start) - 1.0
+        else:
+            self.rets[self.dtkey] = 0.0
         # self.rets[self.dtkey] = (float(self._value) / float(self._value_start)) - 1.0
         self._lastvalue = self._value  # keep last value

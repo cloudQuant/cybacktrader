@@ -5,7 +5,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from cybacktrader.indicator import Indicator
-from cybacktrader.indicators.basicops import Max
+from cybacktrader.functions import Max
 from cybacktrader.indicators.deviation import MeanDev
 from cybacktrader.indicators.mabase import MovAv
 

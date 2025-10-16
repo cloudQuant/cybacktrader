@@ -4,12 +4,41 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from collections import OrderedDict
-import itertools
 import sys
+import itertools
+import threading
+from collections import OrderedDict
 
 import cybacktrader as bt
-from cybacktrader.utils.py3 import zip, string_types, with_metaclass
+from cybacktrader.utils.py3 import range, zip, string_types, with_metaclass
+
+# Thread-local storage for owner stack (for Cython compatibility)
+_owner_stack = threading.local()
+
+def _get_owner_stack():
+    """Get the current thread's owner stack"""
+    if not hasattr(_owner_stack, 'stack'):
+        _owner_stack.stack = []
+    return _owner_stack.stack
+
+def _push_owner(owner):
+    """Push an owner onto the stack"""
+    _get_owner_stack().append(owner)
+
+def _pop_owner():
+    """Pop an owner from the stack"""
+    stack = _get_owner_stack()
+    if stack:
+        stack.pop()
+
+def _peek_owner():
+    """Peek at the top owner on the stack"""
+    stack = _get_owner_stack()
+    return stack[-1] if stack else None
+
+# Export these for external use
+__all__ = ['findowner', 'findbases', 'MetaBase', 'AutoInfoClass', 
+           '_push_owner', '_pop_owner', '_peek_owner', '_get_owner_stack']
 
 # 寻找基类，这个python函数主要使用了四个python小技巧：
 # 第一个是class.__bases__这个会包含class的基类(父类)
@@ -42,8 +71,14 @@ def findbases(kls, topclass):
 # sys._getframe().f_locals返回的是帧对象的本地的变量，字典形式，使用get("self",None)是查看本地变量中有没有frame，如果有的话，返回相应的值，如果没有，返回值是None
 # 总结一下这个函数的用法：findowner用于发现owned的父类，这个类是cls的实例，但是同时这个类不能是skip，如果不能满足这些条件，就返回一个None.
 def findowner(owned, cls, startlevel=2, skip=None):
+    # First try the owner stack (for Cython compatibility)
+    peek = _peek_owner()
+    if peek is not None and peek is not owned and peek is not skip and isinstance(peek, cls):
+        return peek
+    
     # skip this frame and the caller's -> start at 2
-    for framelevel in itertools.count(startlevel):
+    # Increased max depth for Cython compatibility - search up to 50 frames
+    for framelevel in range(startlevel, startlevel + 50):
         try:
             frame = sys._getframe(framelevel)
         except ValueError:
@@ -86,7 +121,13 @@ class MetaBase(type):
         return _obj, args, kwargs
 
     def doinit(cls, _obj, *args, **kwargs):
-        _obj.__init__(*args, **kwargs)
+        # Push object onto owner stack before __init__ so child objects can find it
+        _push_owner(_obj)
+        try:
+            _obj.__init__(*args, **kwargs)
+        finally:
+            # Always pop, even if __init__ raises an exception
+            _pop_owner()
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):

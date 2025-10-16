@@ -4,7 +4,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from cybacktrader.indicators.mabase import MovingAverageBase, ExponentialSmoothing
+from cybacktrader.indicators.mabase import MovingAverageBase
+from cybacktrader.indicators.basicops import ExponentialSmoothing
 
 # 指数移动平均线
 class ExponentialMovingAverage(MovingAverageBase):

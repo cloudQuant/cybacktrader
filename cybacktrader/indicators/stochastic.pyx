@@ -5,7 +5,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from cybacktrader.indicator import Indicator
-from cybacktrader.indicators.basicops import Max, Highest, Lowest, DivByZero
+from cybacktrader.indicators.basicops import Highest, Lowest
+from cybacktrader.functions import Max, DivByZero
 from cybacktrader.indicators.mabase import MovAv
 
 # kdj随机指标

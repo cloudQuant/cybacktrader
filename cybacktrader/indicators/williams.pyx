@@ -5,7 +5,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from cybacktrader.indicator import Indicator
-from cybacktrader.indicators.basicops import Highest, Lowest, If, UpDay, DownDay, Accum, TrueLow, TrueHigh
+from cybacktrader.indicators.basicops import Highest, Lowest, Accum
+from cybacktrader.functions import If
+from cybacktrader.indicators.rsi import UpDay, DownDay
+from cybacktrader.indicators.atr import TrueLow, TrueHigh
 
 # 威廉指标
 class WilliamsR(Indicator):

@@ -27,7 +27,8 @@ class TotalValue(Analyzer):
     def next(self):
         # Calculate the return
         super(TotalValue, self).next()
-        self.rets[self.datas[0].datetime.datetime()] = self.strategy.broker.getvalue()
+        if self.strategy is not None and len(self.datas) > 0:
+            self.rets[self.datas[0].datetime.datetime()] = self.strategy.broker.getvalue()
 
     def get_analysis(self):
         return self.rets

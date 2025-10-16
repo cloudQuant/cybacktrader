@@ -35,7 +35,7 @@ class MetaAnalyzer(bt.MetaParams):
         if masterobs is not None:
             masterobs._register_analyzer(_obj)
         # analyzer的数据
-        _obj.datas = strategy.datas
+        _obj.datas = strategy.datas if strategy is not None else []
 
         # For each data add aliases: for first data: data and data0
         # 如果analyzer的数据不是None的话
@@ -64,6 +64,9 @@ class MetaAnalyzer(bt.MetaParams):
                     if linealias:
                         setattr(_obj, 'data%d_%s' % (d, linealias), line)
                     setattr(_obj, 'data%d_%d' % (d, l), line)
+        else:
+            # Set data to None if no datas available
+            _obj.data = None
         # 调用create_analysis方法
         _obj.create_analysis()
 
@@ -343,9 +346,14 @@ class TimeFrameAnalyzerBase(with_metaclass(MetaTimeFrameAnalyzerBase,
     def _start(self):
         # Override to add specific attributes
         # 设置交易周期，比如分钟
-        self.timeframe = self.p.timeframe or self.data._timeframe
-        # 设置周期的数目，比如5，
-        self.compression = self.p.compression or self.data._compression
+        if self.data is not None:
+            self.timeframe = self.p.timeframe or self.data._timeframe
+            # 设置周期的数目，比如5，
+            self.compression = self.p.compression or self.data._compression
+        else:
+            # Provide defaults when data is not available
+            self.timeframe = self.p.timeframe or TimeFrame.Days
+            self.compression = self.p.compression or 1
 
         self.dtcmp, self.dtkey = self._get_dt_cmpkey(datetime.datetime.min)
         super(TimeFrameAnalyzerBase, self)._start()
@@ -393,7 +401,10 @@ class TimeFrameAnalyzerBase(with_metaclass(MetaTimeFrameAnalyzerBase,
         # 否则，就调用_get_dt_cmpkey(dt)获取dtcmp, dtkey
         else:
             # With >= 1.9.x the system datetime is in the strategy
-            dt = self.strategy.datetime.datetime()
+            if self.strategy is not None:
+                dt = self.strategy.datetime.datetime()
+            else:
+                dt = datetime.datetime.min
             dtcmp, dtkey = self._get_dt_cmpkey(dt)
         # 如果dtcmp是None，或者dtcmp大于self.dtcmp的话
         if self.dtcmp is None or dtcmp > self.dtcmp:

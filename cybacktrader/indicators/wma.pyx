@@ -6,7 +6,8 @@ from __future__ import (absolute_import, division, print_function,
 
 from ..utils.py3 import range
 
-from cybacktrader.indicators.mabase import MovingAverageBase, AverageWeighted
+from cybacktrader.indicators.mabase import MovingAverageBase
+from cybacktrader.indicators.basicops import WeightedAverage
 
 # 加权平均均线
 class WeightedMovingAverage(MovingAverageBase):
@@ -31,7 +32,7 @@ class WeightedMovingAverage(MovingAverageBase):
 
         # Before super to ensure mixins (right-hand side in subclassing)
         # can see the assignment operation and operate on the line
-        self.lines[0] = AverageWeighted(
+        self.lines[0] = WeightedAverage(
             self.data, period=self.p.period,
             coef=coef, weights=weights)
 

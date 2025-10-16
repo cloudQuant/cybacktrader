@@ -5,7 +5,6 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from cybacktrader.indicator import Indicator
-from cybacktrader.indicators.percentchange import ROC
 
 # 动量指标，动量震荡指标，ROC指标，ROC指标乘以100
 class Momentum(Indicator):
@@ -106,5 +105,5 @@ class RateOfChange100(Indicator):
     params = (('period', 12),)
 
     def __init__(self):
-        self.l.roc100 = 100.0 * ROC(self.data, period=self.p.period)
+        self.l.roc100 = 100.0 * RateOfChange(self.data, period=self.p.period)
         super(RateOfChange100, self).__init__()

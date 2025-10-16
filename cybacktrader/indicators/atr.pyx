@@ -5,7 +5,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from cybacktrader.indicator import Indicator
-from cybacktrader.indicators.basicops import Max, Min
+from cybacktrader.functions import Max, Min
 from cybacktrader.indicators.mabase import MovAv
 
 # 这个文件是几个计算TR、ATR指标的类

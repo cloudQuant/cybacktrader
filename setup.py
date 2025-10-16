@@ -10,17 +10,27 @@ from Cython.Build import cythonize
 import numpy as np
 import os
 
-# Compiler directives for optimization
+# Compiler directives - enable safety checks for debugging
 compiler_directives = {
     'language_level': '3',
-    'boundscheck': False,  # Disable bounds checking for speed
-    'wraparound': False,   # Disable negative indexing for speed
-    'cdivision': True,     # Use C division semantics
-    'initializedcheck': False,
-    'nonecheck': False,
+    'boundscheck': True,   # Enable bounds checking for safety
+    'wraparound': True,    # Enable negative indexing
+    'cdivision': False,    # Use Python division semantics for safety
+    'initializedcheck': True,
+    'nonecheck': True,
     'embedsignature': True,
-    'profile': False,      # Disable profiling hooks for production
+    'profile': False,
 }
+
+# C++ compiler settings
+import sys
+from setuptools.extension import Extension as _Extension
+
+class Extension(_Extension):
+    def __init__(self, *args, **kwargs):
+        _Extension.__init__(self, *args, **kwargs)
+        # Let Cython decide the language (will generate .c files by default)
+        # No extra compiler flags for now
 
 # Compile modules in dependency order
 import glob
@@ -28,7 +38,8 @@ from pathlib import Path
 
 # Try to compile all modules - don't skip any
 # External dependencies will be handled with try/except in the code
-SKIP_MODULES = set()  # No skipping, compile everything!
+# Skip mabase to keep it as pure Python (metaclass issues with Cython)
+SKIP_MODULES = {'mabase'}
 
 def should_compile(pyx_path):
     """Check if module should be compiled"""
@@ -157,6 +168,7 @@ setup(
     ext_modules=cythonize(
         ext_modules,
         compiler_directives=compiler_directives,
+        language_level='3',
         annotate=True,  # Generate HTML annotation files for optimization review
     ) if ext_modules else [],
     include_dirs=[np.get_include()] if ext_modules else [],

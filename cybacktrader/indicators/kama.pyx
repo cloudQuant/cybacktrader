@@ -5,7 +5,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from cybacktrader.indicators.basicops import SumN
-from cybacktrader.indicators.mabase import MovingAverageBase, ExponentialSmoothingDynamic
+from cybacktrader.indicators.mabase import MovingAverageBase
+from cybacktrader.indicators.basicops import ExponentialSmoothingDynamic
 
 # 自适应均线
 class AdaptiveMovingAverage(MovingAverageBase):

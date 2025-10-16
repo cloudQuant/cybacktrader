@@ -6,7 +6,8 @@ from __future__ import (absolute_import, division, print_function,
 
 
 import cybacktrader as bt
-from cybacktrader.indicators import SumN, TrueLow, TrueRange
+from cybacktrader.indicators.basicops import SumN
+from cybacktrader.indicators.atr import TrueLow, TrueRange
 
 # 最终震荡指标
 class UltimateOscillator(bt.Indicator):

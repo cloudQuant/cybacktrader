@@ -86,14 +86,17 @@ class Returns(TimeFrameAnalyzerBase):
         super(Returns, self).start()
         # 如果fund是None的话，_fundmode是broker的fundmode，否则就等于fund
         if self.p.fund is None:
-            self._fundmode = self.strategy.broker.fundmode
+            self._fundmode = self.strategy.broker.fundmode if (self.strategy is not None) else False
         else:
             self._fundmode = self.p.fund
         # 如果fundmode是False的话，获取value,如果不是False的话，获取fundvalue
-        if not self._fundmode:
-            self._value_start = self.strategy.broker.getvalue()
+        if self.strategy is not None:
+            if not self._fundmode:
+                self._value_start = self.strategy.broker.getvalue()
+            else:
+                self._value_start = self.strategy.broker.fundvalue
         else:
-            self._value_start = self.strategy.broker.fundvalue
+            self._value_start = 0.0
         # 统计subperiod
         self._tcount = 0
 
@@ -101,10 +104,13 @@ class Returns(TimeFrameAnalyzerBase):
     def stop(self):
         super(Returns, self).stop()
         # 如果fundmode是False的话，获取value,如果不是False的话，获取fundvalue
-        if not self._fundmode:
-            self._value_end = self.strategy.broker.getvalue()
+        if self.strategy is not None:
+            if not self._fundmode:
+                self._value_end = self.strategy.broker.getvalue()
+            else:
+                self._value_end = self.strategy.broker.fundvalue
         else:
-            self._value_end = self.strategy.broker.fundvalue
+            self._value_end = 0.0
 
         # Compound return
         # rtot计算的是总的对数收益率
@@ -122,7 +128,10 @@ class Returns(TimeFrameAnalyzerBase):
 
         # Average return
         # 计算的是平均的收益率,先计算的对数收益率，然后计算的平均的对数收益率
-        self.rets['ravg'] = ravg = rtot / self._tcount
+        if self._tcount > 0:
+            self.rets['ravg'] = ravg = rtot / self._tcount
+        else:
+            self.rets['ravg'] = ravg = 0.0
 
         # Annualized normalized return
         # 计算的是年化的收益率

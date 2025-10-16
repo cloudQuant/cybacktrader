@@ -49,7 +49,10 @@ class DrawDown(bt.Analyzer):
         super(DrawDown, self).start()
         if self.p.fund is None:
             # self._fundmode = self.strategy.broker.fundmode
-            setattr(self, "_fundmode", self.strategy.broker.fundmode)
+            if self.strategy is not None:
+                setattr(self, "_fundmode", self.strategy.broker.fundmode)
+            else:
+                setattr(self, "_fundmode", False)
         else:
             # self._fundmode = self.p.fund
             setattr(self, "_fundmode", self.p.fund)
