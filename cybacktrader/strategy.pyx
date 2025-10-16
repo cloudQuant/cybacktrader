@@ -439,7 +439,20 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
                 observer._next()
     # 把最小周期状态传递到analyzer中
     def _next_analyzers(self, minperstatus, once=False):
+        # Notify analyzers of fund values before calling next
+        cash = self.broker.getcash()
+        value = self.broker.getvalue()
+        fundvalue = self.broker.fundvalue if hasattr(self.broker, 'fundvalue') else value
+        shares = self.broker.fundshares if hasattr(self.broker, 'fundshares') else 0.0
+        
         for analyzer in self.analyzers:
+            # Fix strategy reference if it's None (can happen with Cython compilation)
+            if analyzer.strategy is None:
+                analyzer.strategy = self
+            
+            # Notify fund values
+            analyzer._notify_fund(cash, value, fundvalue, shares)
+            
             if minperstatus < 0:
                 analyzer._next()
             elif minperstatus == 0:

@@ -8,9 +8,20 @@ from __future__ import (absolute_import, division, print_function,
 # Import in order to avoid circular dependencies
 
 # Base analyzers without external dependencies
-from cybacktrader.analyzers.timereturn import *
-from cybacktrader.analyzers.tradeanalyzer import *
-from cybacktrader.analyzers.sqn import *
+try:
+    from cybacktrader.analyzers.timereturn import *
+except ImportError:
+    pass
+
+try:
+    from cybacktrader.analyzers.tradeanalyzer import *
+except ImportError:
+    pass
+
+try:
+    from cybacktrader.analyzers.sqn import *
+except ImportError:
+    pass
 
 # Import analyzers that may have dependencies
 try:

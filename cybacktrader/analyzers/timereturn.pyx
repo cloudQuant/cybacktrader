@@ -113,7 +113,12 @@ class TimeReturn(TimeFrameAnalyzerBase):
         # next is called in a new timeframe period
         # if self.p.data is None or len(self.p.data) > 1:
         if self.p.data is None or self._lastvalue is not None:
-            self._value_start = self._lastvalue  # update value_start to last
+            # For the first period, use current value if lastvalue is None
+            if self._lastvalue is None:
+                # Use current value if available, otherwise 0
+                self._value_start = getattr(self, '_value', 0.0)
+            else:
+                self._value_start = self._lastvalue  # update value_start to last
 
         else:
             # The 1st tick has no previous reference, use the opening price
