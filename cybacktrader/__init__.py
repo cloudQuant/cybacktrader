@@ -7,9 +7,6 @@ cybacktrader - Cython-accelerated backtrader
 All imports use cybacktrader modules
 """
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 # Version
 from cybacktrader.version import __version__, __btversion__
 
