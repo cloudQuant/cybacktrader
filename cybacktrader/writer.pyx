@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 import collections
 import io
@@ -184,11 +187,15 @@ class WriterFile(WriterBase):
 
     # 把多条line写入到self.out中
     def writelines(self, lines):
+        # Cython优化：I/O操作
         for l in lines:
             self.out.write(l + '\n')
 
     # 写入line的分隔符
     def writelineseparator(self, level=0):
+        # Cython优化：类型声明
+        cdef int sepnum
+        
         # 决定选用哪种分隔符，默认选择的是第一个分隔符"="
         sepnum = level % len(self.p.separators)
         separator = self.p.separators[sepnum]
@@ -200,11 +207,12 @@ class WriterFile(WriterBase):
 
     # 写入字典
     def writedict(self, dct, level=0, recurse=False):
+        # Cython优化：字典迭代和I/O操作
         # 如果没有递归的话，写入line分隔符
         if not recurse:
             self.writelineseparator(level)
         # 首行缩进多少
-        indent0 = level * self.p.indent
+        cdef int indent0 = level * self.p.indent
         # 迭代字典
         for key, val in dct.items():
             # 首行空格
