@@ -11,10 +11,13 @@ lines at once.
 .moduleauthor:: Daniel Rodriguez
 
 """
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import sys
 
@@ -176,7 +179,7 @@ class Lines(object):
         # 如果lalias是None，l2alias是空的字典，否则返回lalias._getkwargsdefault()
         # l2alias = {} if lalias is None else lalias._getkwargsdefault() # backtrader自带，在这里面没用，移动到下面
         # for line, linealias in l2add: # backtrader自带
-        for line,linealias in enumerate(lines2add, start=l2start):
+        for line, linealias in enumerate(lines2add, start=l2start):
             # line是一个整数，linealias如果不是字符串，那么和可能是元组或者列表，第一个就是它的名字
             if not isinstance(linealias, string_types):
                 # a tuple or list was passed, 1st is named
@@ -199,13 +202,13 @@ class Lines(object):
                     # a tuple or list was passed, 1st is named
                     linealias = linealias[0]
 
-                # 给newcls设置alias属性，属性值为desc
-                desc = LineAlias(line)  # keep a reference below
                 if linealias in l2alias:
                     extranames = l2alias[linealias]
+
                     if isinstance(linealias, string_types):
                         extranames = [extranames]
 
+                    desc = LineAlias(line)
                     for ename in extranames:
                         setattr(newcls, ename, desc)
 
@@ -238,8 +241,9 @@ class Lines(object):
         Create the lines recording during "_derive" or else use the
         provided "initlines"
         """
-        # 初始化lines,设定lines是一个列表 - Cython优化
-        cdef int i  # 类型声明
+        # 初始化lines,设定lines是一个列表 - Cython深度优化
+        cdef int i, line
+        cdef object linealias, kwargs
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()
