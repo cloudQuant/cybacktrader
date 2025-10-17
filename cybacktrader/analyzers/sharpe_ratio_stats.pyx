@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+
+# Cython性能优化标记（保守设置）
+# cython: language_level=3
+# cython: infer_types=True
 # Cython性能优化标记
 # cython: language_level=3
 import numpy as np

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython深度性能优化标记
+# Cython性能优化标记（保守设置）
 # cython: language_level=3
+# cython: infer_types=True
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True

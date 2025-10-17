@@ -1,0 +1,36 @@
+Users Guide
+===========
+Contents:
+.. toctree::
+:maxdepth: 2
+language\_basics
+extension\_types
+special\_methods
+sharing\_declarations
+external\_C\_code
+source\_files\_and\_compilation
+early\_binding\_for\_speed
+wrapping\_CPlusPlus
+fusedtypes
+pypy
+limited\_api
+migrating\_to\_cy30
+limitations
+pyrex\_differences
+memoryviews
+buffer
+parallelism
+debugging
+numpy\_tutorial
+numpy\_ufuncs
+numpy\_pythran
+nogil
+freethreading
+tempita
+troubleshooting
+faq
+Indices and tables
+------------------
+\* :ref:`genindex`
+\* :ref:`modindex`
+\* :ref:`search`

@@ -1,0 +1,21 @@
+Tutorials
+=========
+.. toctree::
+:maxdepth: 2
+cython\_tutorial
+external
+clibraries
+cdef\_classes
+pxd\_files
+caveats
+profiling\_tutorial
+strings
+memory\_allocation
+embedding
+pure
+numpy
+array
+parallelization
+readings
+related\_work
+appendix

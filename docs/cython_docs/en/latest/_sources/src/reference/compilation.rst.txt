@@ -1,0 +1,63 @@
+.. highlight:: cython
+=============
+Compilation
+=============
+.. note::
+The sections in this page were moved to the :ref:`compilation` in the userguide.
+Compiling from the command line
+===============================
+This section was moved to :ref:`compiling\_command\_line`.
+Compiling with ``distutils``
+============================
+This section was moved to :ref:`basic\_setup.py`.
+Configuring the C-Build
+------------------------
+This section was moved to :ref:`basic\_setup.py`.
+Cythonize arguments
+-------------------
+This section was moved to :ref:`cythonize\_arguments`.
+Compiler options
+----------------
+This section was moved to :ref:`compiler\_options`.
+Distributing Cython modules
+----------------------------
+This section was moved to :ref:`distributing\_cython\_modules`.
+Integrating multiple modules
+============================
+This section was moved to :ref:`integrating\_multiple\_modules`.
+Compiling with :mod:`pyximport`
+===============================
+This section was moved to :ref:`pyximport`.
+Arguments
+---------
+Dependency Handling
+--------------------
+Limitations
+------------
+Compiling with ``cython.inline``
+=================================
+This section was moved to :ref:`compiling\_with\_cython\_inline`.
+Compiling with Sage
+===================
+This section was moved to :ref:`compiling\_with\_sage`.
+Compiling with a Jupyter Notebook
+=================================
+This section was moved to :ref:`compiling\_notebook`.
+Compiler directives
+====================
+This section was moved to :ref:`compiler-directives`.
+Configurable optimisations
+--------------------------
+This section was moved to :ref:`configurable\_optimisations`.
+Warnings
+--------
+This section was moved to :ref:`warnings`.
+How to set directives
+---------------------
+This section was moved to :ref:`how\_to\_set\_directives`.
+Globally
+:::::::::
+Locally
+::::::::
+In :file:`setup.py`
+:::::::::::::::::::
