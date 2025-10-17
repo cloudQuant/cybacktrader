@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import collections
 import datetime
@@ -313,8 +318,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def getfeed(self):
         return self._feed
 
-    # 缓存数据的量
+    # 缓存数据的量 - Cython优化
     def qbuffer(self, savemem=0, replaying=False):
+        cdef object line
         extrasize = self.resampling or replaying
         for line in self.lines:
             line.qbuffer(savemem=savemem, extrasize=extrasize)
@@ -373,21 +379,23 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         self._compensate = other
 
-    # 给非datetime的名称设置一个tick_+名称的属性为None，主要是在从高频率数据合成低频率数据的时候使用
+    # 给非datetime的名称设置一个tick_+名称的属性为None，主要是在从高频率数据合成低频率数据的时候使用 - Cython优化
     def _tick_nullify(self):
         # These are the updating prices in case the new bar is "updated"
         # and the length doesn't change like if a replay is happening or
         # a real-time data feed is in use and 1 minutes bars are being
         # constructed with 5 seconds updates
+        cdef object lalias
         for lalias in self.getlinealiases():
             if lalias != 'datetime':
                 setattr(self, 'tick_' + lalias, None)
 
         self.tick_last = None
 
-    # 如果tick_xxx相关的属性值是None的话，就要考虑使用bar的数据去填充
+    # 如果tick_xxx相关的属性值是None的话，就要考虑使用bar的数据去填充 - Cython优化
     def _tick_fill(self, force=False):
         # If nothing filled the tick_xxx attributes, the bar is the tick
+        cdef object lalias
         alias0 = self._getlinealias(0)
         if force or getattr(self, 'tick_' + alias0, None) is None:
             for lalias in self.getlinealiases():
@@ -483,10 +491,11 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self._last()
         self.home()
 
-    # 使用过滤器的最后一个机会
+    # 使用过滤器的最后一个机会 - Cython优化
     def _last(self, datamaster=None):
         # Last chance for filters to deliver something
-        
+        cdef int ret
+        cdef object ff, fargs, fkwargs
         ret = 0
         for ff, fargs, fkwargs in self._ffilters:
             ret += ff.last(self, *fargs, **fkwargs)
@@ -504,8 +513,10 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         return bool(ret)
 
-    # 判断是否需要进行检查
+    # 判断是否需要进行检查 - Cython优化
     def _check(self, forcedata=None):
+        cdef int ret
+        cdef object ff, fargs, fkwargs
         ret = 0
         for ff, fargs, fkwargs in self._filters:
             if not hasattr(ff, 'check'):
@@ -514,6 +525,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
     # 加载数据
     def load(self):
+        cdef int i
+        cdef object ff, fargs, fkwargs
         
         while True:
             # move data pointer forward for new bar
@@ -568,7 +581,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
                 break
 
             # Pass through filters
-            # 遍历每个过滤器
+            # 遍历每个过滤器 - Cython优化
             retff = False
             for ff, fargs, fkwargs in self._filters:
                 # previous filter may have put things onto the stack
@@ -611,8 +624,8 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         """Saves current bar to the bar stack for later retrieval
 
         Parameter ``erase`` determines removal from the data stream
-        """
-        
+        """        
+        cdef object line
         bar = [line[0] for line in self.itersize()]
         if not stash:
             self._barstack.append(bar)
@@ -628,6 +641,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         Returns True if values are present, False otherwise
         """
+        cdef object line, val
         if forward:
             self.forward()
 
@@ -641,6 +655,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         Returns True if values are present, False otherwise
         """
         # 当stash是False的时候，coll等于self._barstack,否则就是self._barstash
+        cdef object line, val
         coll = self._barstack if not stash else self._barstash
         # 如果coll是有数据的
         if coll:
@@ -676,13 +691,15 @@ class FeedBase(with_metaclass(metabase.MetaParams, object)):
     def __init__(self):
         self.datas = list()
         
-    # 数据开始
+    # 数据开始 - Cython优化
     def start(self):
+        cdef object data
         for data in self.datas:
             data.start()
             
-    # 数据结束
+    # 数据结束 - Cython优化
     def stop(self):
+        cdef object data
         for data in self.datas:
             data.stop()
 
@@ -879,6 +896,7 @@ class DataClone(AbstractDataBase):
     def _load(self):
         # assumption: the data is in the system
         # simply copy the lines
+        cdef object line, dline
         # 如果准备preload的话，运行下面的代码，一点点copy具体的数据
         if self._preloading:
             # data is preloaded, we are preloading too, can move
@@ -888,7 +906,7 @@ class DataClone(AbstractDataBase):
             # 如果当前的数据大于了数据的缓存的长度，返回False
             if len(self.data) > self.data.buflen():
                 return False
-            # 如果当前的数据长度没有大于缓存的数据长度，那么就设置line的数据为dline的数据
+            # 如果当前的数据长度没有大于缓存的数据长度，那么就设置line的数据为dline的数据 - Cython优化
             for line, dline in zip(self.lines, self.data.lines):
                 line[0] = dline[0]
             # 设置成功之后返回True
@@ -904,7 +922,7 @@ class DataClone(AbstractDataBase):
         # 数据长度加1
         self._dlen += 1
 
-        # 设置line的数据为dline的数据
+        # 设置line的数据为dline的数据 - Cython优化
         for line, dline in zip(self.lines, self.data.lines):
             line[0] = dline[0]
 
