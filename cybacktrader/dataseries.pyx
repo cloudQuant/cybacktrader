@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import datetime as _datetime
 from datetime import datetime
@@ -65,8 +70,9 @@ class DataSeries(LineSeries):
     # dataseries中line的顺序
     LineOrder = [DateTime, Open, High, Low, Close, Volume, OpenInterest]
 
-    # 获取dataseries的header的变量名称，
+    # 获取dataseries的header的变量名称， - Cython优化
     def getwriterheaders(self):
+        cdef int lo
         headers = [self._name, 'len']
 
         for lo in self.LineOrder:
@@ -77,8 +83,9 @@ class DataSeries(LineSeries):
 
         return headers
 
-    # 获取values
+    # 获取values - Cython优化
     def getwritervalues(self):
+        cdef int l, line, i
         l = len(self)
         values = [self._name, l]
 
