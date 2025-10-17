@@ -11,12 +11,14 @@ with appends, forwarding, rewinding, resetting and other
 .moduleauthor:: Daniel Rodriguez
 
 """
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
 # cython: nonecheck=False
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import array
 import collections
@@ -29,6 +31,9 @@ from cybacktrader.utils.py3 import range, with_metaclass, string_types
 from cybacktrader.lineroot import LineRoot, LineSingle, LineMultiple
 from cybacktrader import metabase
 from cybacktrader.utils import num2date, time2num
+
+# Cython imports for C-level optimization
+from libc.math cimport trunc as c_trunc, modf as c_modf
 
 
 NAN = float('NaN')
@@ -441,15 +446,15 @@ class LineBuffer(LineSingle):
         return num2date(self.array[self.idx + ago],
                         tz=tz or self._tz, naive=naive).time()
 
-    # 返回时间相关的浮点数的整数部分 - Cython优化
+    # 返回时间相关的浮点数的整数部分 - Cython深度优化：使用C数学函数
     def dt(self, ago=0):
         """
         return numeric date part of datetimefloat
         """
         cdef int index = self.idx + ago
-        return math.trunc(self.array[index])
+        return c_trunc(self.array[index])
 
-    # 返回时间相关浮点数的小数部分 - Cython优化
+    # 返回时间相关浮点数的小数部分 - Cython深度优化：使用C数学函数
     def tm_raw(self, ago=0):
         """
         return raw numeric time part of datetimefloat
@@ -458,7 +463,9 @@ class LineBuffer(LineSingle):
         # without transforming it to time to avoid the influence of the day
         # count (integer part of coding)
         cdef int index = self.idx + ago
-        return math.modf(self.array[index])[0]
+        cdef double frac, intpart
+        frac = c_modf(self.array[index], &intpart)
+        return frac
 
     # 把一个日期-时间格式的时间部分转化成浮点数 - Cython优化
     def tm(self, ago=0):
@@ -471,7 +478,7 @@ class LineBuffer(LineSingle):
         cdef int index = self.idx + ago
         return time2num(num2date(self.array[index]).time())
 
-    # 对比数据中的日期-时间是否小于数据中的日期+other的大小 - Cython优化
+    # 对比数据中的日期-时间是否小于数据中的日期+other的大小 - Cython深度优化
     def tm_lt(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -482,11 +489,11 @@ class LineBuffer(LineSingle):
         cdef int index = self.idx + ago
         cdef double dtime, tm, dt
         dtime = self.array[index]
-        tm, dt = math.modf(dtime)
+        tm = c_modf(dtime, &dt)
 
         return dtime < (dt + other)
 
-    # 对比数据中的日期-时间是否小于等于数据中的日期+other的大小 - Cython优化
+    # 对比数据中的日期-时间是否小于等于数据中的日期+other的大小 - Cython深度优化
     def tm_le(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -497,11 +504,11 @@ class LineBuffer(LineSingle):
         cdef int index = self.idx + ago
         cdef double dtime, tm, dt
         dtime = self.array[index]
-        tm, dt = math.modf(dtime)
+        tm = c_modf(dtime, &dt)
 
         return dtime <= (dt + other)
 
-    # 对比数据中的日期-时间是否等于数据中的日期+other的大小 - Cython优化
+    # 对比数据中的日期-时间是否等于数据中的日期+other的大小 - Cython深度优化
     def tm_eq(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -512,11 +519,11 @@ class LineBuffer(LineSingle):
         cdef int index = self.idx + ago
         cdef double dtime, tm, dt
         dtime = self.array[index]
-        tm, dt = math.modf(dtime)
+        tm = c_modf(dtime, &dt)
 
         return dtime == (dt + other)
 
-    # 对比数据中的日期-时间是否大于数据中的日期+other的大小 - Cython优化
+    # 对比数据中的日期-时间是否大于数据中的日期+other的大小 - Cython深度优化
     def tm_gt(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -527,11 +534,11 @@ class LineBuffer(LineSingle):
         cdef int index = self.idx + ago
         cdef double dtime, tm, dt
         dtime = self.array[index]
-        tm, dt = math.modf(dtime)
+        tm = c_modf(dtime, &dt)
 
         return dtime > (dt + other)
 
-    # 对比数据中的日期-时间是否大于等于数据中的日期+other的大小 - Cython优化
+    # 对比数据中的日期-时间是否大于等于数据中的日期+other的大小 - Cython深度优化
     def tm_ge(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -542,11 +549,11 @@ class LineBuffer(LineSingle):
         cdef int index = self.idx + ago
         cdef double dtime, tm, dt
         dtime = self.array[index]
-        tm, dt = math.modf(dtime)
+        tm = c_modf(dtime, &dt)
 
         return dtime >= (dt + other)
 
-    # 把时间转化成日期-时间的形式，浮点数 - Cython优化
+    # 把时间转化成日期-时间的形式，浮点数 - Cython深度优化
     def tm2dtime(self, tm, ago=0):
         """
         Returns the given ``tm`` in the frame of the (ago bars) datatime.
@@ -554,9 +561,9 @@ class LineBuffer(LineSingle):
         Useful for external comparisons to avoid precision errors
         """
         cdef int index = self.idx + ago
-        return int(self.array[index]) + tm
+        return c_trunc(self.array[index]) + tm
 
-    # 把时间转化成日期-时间的形式，时间格式 - Cython优化
+    # 把时间转化成日期-时间的形式，时间格式 - Cython深度优化
     def tm2datetime(self, tm, ago=0):
         """
         Returns the given ``tm`` in the frame of the (ago bars) datatime.
@@ -564,7 +571,7 @@ class LineBuffer(LineSingle):
         Useful for external comparisons to avoid precision errors
         """
         cdef int index = self.idx + ago
-        return num2date(int(self.array[index]) + tm)
+        return num2date(c_trunc(self.array[index]) + tm)
 
 
 class MetaLineActions(LineBuffer.__class__):
