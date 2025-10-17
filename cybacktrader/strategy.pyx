@@ -3,6 +3,7 @@
 
 # Cython性能优化标记（保守设置）
 # cython: language_level=3
+# cython: infer_types=True
 
 import collections
 import copy
@@ -328,7 +329,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         else:
             self.prenext_open()
 
-    # _oncepost - Cython优化（仅类型声明）
+    # _oncepost
     def _oncepost(self, dt):
         # 循环指标，如果指标数据的长度大于指标的长度了，继续运行指标
         for indicator in self._lineiterators[LineIterator.IndType]:
