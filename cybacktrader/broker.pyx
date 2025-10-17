@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 from cybacktrader.comminfo import CommInfoBase
 from cybacktrader.metabase import MetaParams
@@ -11,11 +16,12 @@ from cybacktrader.utils.py3 import with_metaclass
 # from . import fillers as fillers
 # from . import fillers as filler
 
-# broker元类，使得get_cash与getcash,get_value与getvalue方法相同
+# broker元类，使得get_cash与getcash,get_value与getvalue方法相同 - Cython优化
 class MetaBroker(MetaParams):
     def __init__(cls, name, bases, dct):
         # Class has already been created ... fill missing methods if needed be
         # Initialize the class
+        cdef object attr, trans
         super(MetaBroker, cls).__init__(name, bases, dct)
         translations = {
             'get_cash': 'getcash',
