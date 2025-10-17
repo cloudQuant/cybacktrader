@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 from cybacktrader.lineiterator import LineIterator, ObserverBase, StrategyBase
 from cybacktrader.utils.py3 import with_metaclass
