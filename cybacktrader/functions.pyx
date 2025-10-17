@@ -6,6 +6,8 @@
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import functools
 import math
@@ -89,12 +91,15 @@ class DivZeroByZero(Logic):
             self[0] = self.a[0] / b
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # Cython深度优化：双零除法保护
+        cdef int i
+        cdef double a, b
+        cdef double single = self.single
+        cdef double dual = self.dual
+        
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
-        single = self.single
-        dual = self.dual
 
         for i in range(start, end):
             b = srcb[i]
@@ -115,7 +120,8 @@ class Cmp(Logic):
         self[0] = cmp(self.a[0], self.b[0])
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # Cython优化：比较操作
+        cdef int i
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -144,7 +150,9 @@ class CmpEx(Logic):
             self[0] = self.r2[0]
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # Cython优化：扩展比较
+        cdef int i
+        cdef double ai, bi
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -175,7 +183,8 @@ class If(Logic):
         self[0] = self.a[0] if self.cond[0] else self.b[0]
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # Cython优化：IF条件
+        cdef int i
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -190,7 +199,8 @@ class MultiLogic(Logic):
         self[0] = self.flogic([arg[0] for arg in self.args])
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # Cython优化：多逻辑
+        cdef int i
         dst = self.array
         arrays = [arg.array for arg in self.args]
         flogic = self.flogic
