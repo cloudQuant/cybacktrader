@@ -11,6 +11,11 @@ lines at once.
 .moduleauthor:: Daniel Rodriguez
 
 """
+# Cython性能优化标记
+# cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
@@ -239,7 +244,8 @@ class Lines(object):
         Create the lines recording during "_derive" or else use the
         provided "initlines"
         """
-        # 初始化lines,设定lines是一个列表
+        # 初始化lines,设定lines是一个列表 - Cython优化
+        cdef int i  # 类型声明
         self.lines = list()
         for line, linealias in enumerate(self._getlines()):
             kwargs = dict()

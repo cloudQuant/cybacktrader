@@ -11,8 +11,12 @@ with appends, forwarding, rewinding, resetting and other
 .moduleauthor:: Daniel Rodriguez
 
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+# Cython性能优化标记
+# cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
 
 import array
 import collections
@@ -158,11 +162,12 @@ class LineBuffer(LineSingle):
         """
         return len(self.array) - self.extension
 
-    # 获取值
+    # 获取值 - Cython优化：内联关键访问方法
     def __getitem__(self, ago):
-        return self.array[self.idx + ago]
+        cdef int index = self.idx + ago  # 类型声明优化索引计算
+        return self.array[index]
 
-    # 获取数据的值，在策略中使用还是比较广泛的
+    # 获取数据的值，在策略中使用还是比较广泛的 - Cython优化
     def get(self, ago=0, size=1):
         """ Returns a slice of the array relative to *ago*
 
@@ -177,6 +182,7 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         """
+        cdef int start, end  # 类型声明优化切片索引
         # 是否使用切片，如果使用按照下面的语法
         if self.useislice:
             start = self.idx + ago - size + 1
@@ -184,7 +190,9 @@ class LineBuffer(LineSingle):
             return list(islice(self.array, start, end))
         
         # 如果不使用切片，直接截取
-        return self.array[self.idx + ago - size + 1:self.idx + ago + 1]
+        start = self.idx + ago - size + 1
+        end = self.idx + ago + 1
+        return self.array[start:end]
 
     # 返回array真正的0处的变量值
     def getzeroval(self, idx=0):
@@ -200,7 +208,7 @@ class LineBuffer(LineSingle):
         """
         return self.array[idx]
 
-    # 返回array从idx开始，size个长度的数据
+    # 返回array从idx开始，size个长度的数据 - Cython优化
     def getzero(self, idx=0, size=1):
         """ Returns a slice of the array relative to the real zero of the buffer
 
@@ -211,12 +219,15 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         """
+        cdef int end  # 类型声明
         if self.useislice:
-            return list(islice(self.array, idx, idx + size))
+            end = idx + size
+            return list(islice(self.array, idx, end))
 
-        return self.array[idx:idx + size]
+        end = idx + size
+        return self.array[idx:end]
 
-    # 给array相关的值
+    # 给array相关的值 - Cython优化：优化设置操作
     def __setitem__(self, ago, value):
         """ Sets a value at position "ago" and executes any associated bindings
 
@@ -225,11 +236,14 @@ class LineBuffer(LineSingle):
             the slice
             value (variable): value to be set
         """
-        self.array[self.idx + ago] = value
-        for binding in self.bindings:
-            binding[ago] = value
+        cdef int index = self.idx + ago  # 类型声明优化索引计算
+        cdef int i  # 循环变量类型声明
+        self.array[index] = value
+        # 优化bindings循环
+        for i in range(len(self.bindings)):
+            self.bindings[i][ago] = value
             
-    # 给array设置具体的值
+    # 给array设置具体的值 - Cython优化
     def set(self, value, ago=0):
         """ Sets a value at position "ago" and executes any associated bindings
 
@@ -238,9 +252,12 @@ class LineBuffer(LineSingle):
             ago (int): Point of the array to which size will be added to return
             the slice
         """
-        self.array[self.idx + ago] = value
-        for binding in self.bindings:
-            binding[ago] = value
+        cdef int index = self.idx + ago  # 类型声明优化索引计算
+        cdef int i  # 循环变量类型声明
+        self.array[index] = value
+        # 优化bindings循环
+        for i in range(len(self.bindings)):
+            self.bindings[i][ago] = value
 
     # 返回到最开始
     def home(self):
@@ -260,9 +277,11 @@ class LineBuffer(LineSingle):
             value (variable): value to be set in new positions
             size (int): How many extra positions to enlarge the buffer
         """
+        cdef int i  # Cython类型声明
         self.idx += size
         self.lencount += size
 
+        # 优化：减少循环中的方法调用
         for i in range(size):
             self.array.append(value)
 
@@ -274,6 +293,7 @@ class LineBuffer(LineSingle):
             size (int): How many extra positions to rewind and reduce the
             buffer
         """
+        cdef int i  # Cython类型声明
         # Go directly to property setter to support force
         self.set_idx(self._idx - size, force=force)
         self.lencount -= size
@@ -306,6 +326,7 @@ class LineBuffer(LineSingle):
         The purpose is to allow for lookahead operations or to be able to
         set values in the buffer "future"
         """
+        cdef int i  # Cython类型声明
         self.extension += size
         for i in range(size):
             self.array.append(value)
@@ -420,14 +441,15 @@ class LineBuffer(LineSingle):
         return num2date(self.array[self.idx + ago],
                         tz=tz or self._tz, naive=naive).time()
 
-    # 返回时间相关的浮点数的整数部分
+    # 返回时间相关的浮点数的整数部分 - Cython优化
     def dt(self, ago=0):
         """
         return numeric date part of datetimefloat
         """
-        return math.trunc(self.array[self.idx + ago])
+        cdef int index = self.idx + ago
+        return math.trunc(self.array[index])
 
-    # 返回时间相关浮点数的小数部分
+    # 返回时间相关浮点数的小数部分 - Cython优化
     def tm_raw(self, ago=0):
         """
         return raw numeric time part of datetimefloat
@@ -435,9 +457,10 @@ class LineBuffer(LineSingle):
         # This function is named raw because it retrieves the fractional part
         # without transforming it to time to avoid the influence of the day
         # count (integer part of coding)
-        return math.modf(self.array[self.idx + ago])[0]
+        cdef int index = self.idx + ago
+        return math.modf(self.array[index])[0]
 
-    # 把一个日期-时间格式的时间部分转化成浮点数
+    # 把一个日期-时间格式的时间部分转化成浮点数 - Cython优化
     def tm(self, ago=0):
         """
         return numeric time part of datetimefloat
@@ -445,9 +468,10 @@ class LineBuffer(LineSingle):
         # To avoid precision errors, this returns the fractional part after
         # having converted it to a datetime.time object to avoid precision
         # errors in comparisons
-        return time2num(num2date(self.array[self.idx + ago]).time())
+        cdef int index = self.idx + ago
+        return time2num(num2date(self.array[index]).time())
 
-    # 对比数据中的日期-时间是否小于数据中的日期+other的大小
+    # 对比数据中的日期-时间是否小于数据中的日期+other的大小 - Cython优化
     def tm_lt(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -455,12 +479,14 @@ class LineBuffer(LineSingle):
         # To compare a raw "tm" part (fractional part of coded datetime)
         # with the tm of the current datetime, the raw "tm" has to be
         # brought in sync with the current "day" count (integer part) to avoid
-        dtime = self.array[self.idx + ago]
+        cdef int index = self.idx + ago
+        cdef double dtime, tm, dt
+        dtime = self.array[index]
         tm, dt = math.modf(dtime)
 
         return dtime < (dt + other)
 
-    # 对比数据中的日期-时间是否小于等于数据中的日期+other的大小
+    # 对比数据中的日期-时间是否小于等于数据中的日期+other的大小 - Cython优化
     def tm_le(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -468,12 +494,14 @@ class LineBuffer(LineSingle):
         # To compare a raw "tm" part (fractional part of coded datetime)
         # with the tm of the current datetime, the raw "tm" has to be
         # brought in sync with the current "day" count (integer part) to avoid
-        dtime = self.array[self.idx + ago]
+        cdef int index = self.idx + ago
+        cdef double dtime, tm, dt
+        dtime = self.array[index]
         tm, dt = math.modf(dtime)
 
         return dtime <= (dt + other)
 
-    # 对比数据中的日期-时间是否等于数据中的日期+other的大小
+    # 对比数据中的日期-时间是否等于数据中的日期+other的大小 - Cython优化
     def tm_eq(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -481,12 +509,14 @@ class LineBuffer(LineSingle):
         # To compare a raw "tm" part (fractional part of coded datetime)
         # with the tm of the current datetime, the raw "tm" has to be
         # brought in sync with the current "day" count (integer part) to avoid
-        dtime = self.array[self.idx + ago]
+        cdef int index = self.idx + ago
+        cdef double dtime, tm, dt
+        dtime = self.array[index]
         tm, dt = math.modf(dtime)
 
         return dtime == (dt + other)
 
-    # 对比数据中的日期-时间是否大于数据中的日期+other的大小
+    # 对比数据中的日期-时间是否大于数据中的日期+other的大小 - Cython优化
     def tm_gt(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -494,12 +524,14 @@ class LineBuffer(LineSingle):
         # To compare a raw "tm" part (fractional part of coded datetime)
         # with the tm of the current datetime, the raw "tm" has to be
         # brought in sync with the current "day" count (integer part) to avoid
-        dtime = self.array[self.idx + ago]
+        cdef int index = self.idx + ago
+        cdef double dtime, tm, dt
+        dtime = self.array[index]
         tm, dt = math.modf(dtime)
 
         return dtime > (dt + other)
 
-    # 对比数据中的日期-时间是否大于等于数据中的日期+other的大小
+    # 对比数据中的日期-时间是否大于等于数据中的日期+other的大小 - Cython优化
     def tm_ge(self, other, ago=0):
         """
         return numeric time part of datetimefloat
@@ -507,28 +539,32 @@ class LineBuffer(LineSingle):
         # To compare a raw "tm" part (fractional part of coded datetime)
         # with the tm of the current datetime, the raw "tm" has to be
         # brought in sync with the current "day" count (integer part) to avoid
-        dtime = self.array[self.idx + ago]
+        cdef int index = self.idx + ago
+        cdef double dtime, tm, dt
+        dtime = self.array[index]
         tm, dt = math.modf(dtime)
 
         return dtime >= (dt + other)
 
-    # 把时间转化成日期-时间的形式，浮点数
+    # 把时间转化成日期-时间的形式，浮点数 - Cython优化
     def tm2dtime(self, tm, ago=0):
         """
         Returns the given ``tm`` in the frame of the (ago bars) datatime.
 
         Useful for external comparisons to avoid precision errors
         """
-        return int(self.array[self.idx + ago]) + tm
+        cdef int index = self.idx + ago
+        return int(self.array[index]) + tm
 
-    # 把时间转化成日期-时间的形式，时间格式
+    # 把时间转化成日期-时间的形式，时间格式 - Cython优化
     def tm2datetime(self, tm, ago=0):
         """
         Returns the given ``tm`` in the frame of the (ago bars) datatime.
 
         Useful for external comparisons to avoid precision errors
         """
-        return num2date(int(self.array[self.idx + ago]) + tm)
+        cdef int index = self.idx + ago
+        return num2date(int(self.array[index]) + tm)
 
 
 class MetaLineActions(LineBuffer.__class__):
@@ -735,6 +771,7 @@ class _LineDelay(LineActions):
     def once(self, start, end):
         # cache python dictionary lookups
         # 调用once的时候，根据a的数据,生成对应的ago前的数据形成的array
+        cdef int i  # Cython类型声明
         dst = self.array
         src = self.a.array
         ago = self.ago
@@ -766,6 +803,7 @@ class _LineForward(LineActions):
 
     def once(self, start, end):
         # cache python dictionary lookups
+        cdef int i  # Cython类型声明
         dst = self.array
         src = self.a.array
         ago = self.ago
@@ -848,6 +886,7 @@ class LinesOperation(LineActions):
     def _once_op(self, start, end):
         # cache python dictionary lookups
         # a和b都是line的情况下的操作
+        cdef int i  # Cython类型声明
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
@@ -859,6 +898,7 @@ class LinesOperation(LineActions):
     def _once_time_op(self, start, end):
         # cache python dictionary lookups
         # a是line，b是时间下的操作
+        cdef int i  # Cython类型声明
         dst = self.array
         srca = self.a.array
         srcb = self.b
@@ -871,6 +911,7 @@ class LinesOperation(LineActions):
     def _once_val_op(self, start, end):
         # cache python dictionary lookups
         # a是line，b是浮点数的情况下的操作，这里默认了b只能是浮点数，不能是时间
+        cdef int i  # Cython类型声明
         dst = self.array
         srca = self.a.array
         srcb = self.b
@@ -882,6 +923,7 @@ class LinesOperation(LineActions):
     def _once_val_op_r(self, start, end):
         # cache python dictionary lookups
         # 这里对a和b进行了互换，b是line，a是float或者时间，但是代码里面默认了a应该是float，逻辑判断的时候要注意。
+        cdef int i  # Cython类型声明
         dst = self.array
         srca = self.a
         srcb = self.b.array
@@ -912,6 +954,7 @@ class LineOwnOperation(LineActions):
     def once(self, start, end):
         # cache python dictionary lookups
         # 对line的一部分数据进行操作
+        cdef int i  # Cython类型声明
         dst = self.array
         srca = self.a.array
         op = self.operation

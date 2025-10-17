@@ -1,5 +1,8 @@
-#!/usr/bin389/env python
+#!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
+
+# Cython性能优化标记（保守设置）
+# cython: language_level=3
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -328,7 +331,7 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         else:
             self.prenext_open()
 
-    # _oncepost
+    # _oncepost - Cython优化（仅类型声明）
     def _oncepost(self, dt):
         # 循环指标，如果指标数据的长度大于指标的长度了，继续运行指标
         for indicator in self._lineiterators[LineIterator.IndType]:

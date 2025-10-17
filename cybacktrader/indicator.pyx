@@ -4,6 +4,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+# Cython性能优化标记
+# cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from cybacktrader.utils.py3 import range, with_metaclass
 
@@ -92,9 +97,10 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
         if len(self) < len(self._clock):
             self.lines.advance(size=size)
 
-    # 如果prenext重写了，但是preonce没有被重写，通常的实施方法
+    # 如果prenext重写了，但是preonce没有被重写，通常的实施方法 - Cython优化
     def preonce_via_prenext(self, start, end):
         # generic implementation if prenext is overridden but preonce is not
+        cdef int i  # Cython类型声明
         # 从start到end进行循环
         for i in range(start, end):
             # 数据每次增加
@@ -108,10 +114,11 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
             # 每次调用下prenext
             self.prenext()
 
-    # 如果nextstart重写了，但是oncestart没有重写，需要做的操作，和上一个比较类似
+    # 如果nextstart重写了，但是oncestart没有重写，需要做的操作，和上一个比较类似 - Cython优化
     def oncestart_via_nextstart(self, start, end):
         # nextstart has been overridden, but oncestart has not and the code is
         # here. call the overridden nextstart
+        cdef int i  # Cython类型声明
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
@@ -121,9 +128,10 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
 
             self.advance()
             self.nextstart()
-    # next重写了，但是once没有重写，需要的操作
+    # next重写了，但是once没有重写，需要的操作 - Cython优化
     def once_via_next(self, start, end):
         # Not overridden, next must be there ...
+        cdef int i  # Cython类型声明
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
