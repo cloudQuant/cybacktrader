@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 from cybacktrader.utils.py3 import range, with_metaclass
 
@@ -96,7 +98,8 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     # 如果prenext重写了，但是preonce没有被重写，通常的实施方法 - Cython优化
     def preonce_via_prenext(self, start, end):
         # generic implementation if prenext is overridden but preonce is not
-        cdef int i  # Cython类型声明
+        cdef int i
+        cdef object data, indicator
         # 从start到end进行循环
         for i in range(start, end):
             # 数据每次增加
@@ -114,7 +117,8 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     def oncestart_via_nextstart(self, start, end):
         # nextstart has been overridden, but oncestart has not and the code is
         # here. call the overridden nextstart
-        cdef int i  # Cython类型声明
+        cdef int i
+        cdef object data, indicator
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
@@ -127,7 +131,8 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     # next重写了，但是once没有重写，需要的操作 - Cython优化
     def once_via_next(self, start, end):
         # Not overridden, next must be there ...
-        cdef int i  # Cython类型声明
+        cdef int i
+        cdef object data, indicator
         for i in range(start, end):
             for data in self.datas:
                 data.advance()
