@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+# Cython性能优化标记
+# cython: language_level=3
 import numpy as np
 import pandas as pd
 from scipy import stats as scipy_stats

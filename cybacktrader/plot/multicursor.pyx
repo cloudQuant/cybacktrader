@@ -1,3 +1,6 @@
+
+# Cython性能优化标记
+# cython: language_level=3
 from ..utils.py3 import zip
 
 class Widget(object):

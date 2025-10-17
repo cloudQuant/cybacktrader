@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
+# Cython性能优化标记
+# cython: language_level=3
+
 import math
 from cybacktrader import Analyzer
 from cybacktrader.mathsupport import average, standarddev

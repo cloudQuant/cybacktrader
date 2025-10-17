@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
+# Cython性能优化标记
+# cython: language_level=3
+
 import time
 from collections import deque
 from datetime import datetime, timezone

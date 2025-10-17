@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
+# Cython性能优化标记
+# cython: language_level=3
+
 from collections import OrderedDict
 from cybacktrader.utils.py3 import range
 from cybacktrader.utils.date import num2date
