@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import bisect
 import collections
 from copy import copy
@@ -31,10 +28,7 @@ try:
 except ImportError:
     ib = None
 
-
 bytes = bstr  # py2/3 need for ibpy
-
-
 
 try:
     from ib.ext.Contract import Contract
@@ -42,7 +36,6 @@ try:
     from ib.opt import ibConnection, message
 except ImportError:
     Contract = Order = ibConnection = message = None
-
 
 def _ts2dt(tstamp=None):
     # Transforms a RTVolume timestamp to a datetime object
@@ -60,7 +53,6 @@ def _ts2dt(tstamp=None):
     sec, msec = divmod(long(tstamp), 1)
     usec = msec * 1000
     return datetime.utcfromtimestamp(sec).replace(microsecond=usec)
-
 
 class RTVolume(object):
     '''Parses a tickString tickType 48 (RTVolume) event from the IB API into its
@@ -94,7 +86,6 @@ class RTVolume(object):
         if tmoffset is not None:
             self.datetime += tmoffset
 
-
 class MetaSingleton(MetaParams):
     '''Metaclass to make a metaclassed class a singleton'''
     # todo 这个元类的用处理解还不是特别深，等到后续详细讲backtrader的元类的时候重新拉出来分析
@@ -109,12 +100,10 @@ class MetaSingleton(MetaParams):
 
         return cls._singleton
 
-
 # Decorator to mark methods to register with ib.opt
 def ibregister(f):
     f._ibregister = True
     return f
-
 
 class IBStore(with_metaclass(MetaSingleton, object)):
     '''Singleton class wrapping an ibpy ibConnection instance.
@@ -355,8 +344,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
         'Y': TimeFrame.Years,
     }
 
-
-
     params = (
         ('host', '127.0.0.1'),
         ('port', 7496),
@@ -466,7 +453,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
             message = getattr(ibopt.message, name)
             # 那么就注册这个方法
             self.conn.register(method, message)
-
 
         # 这两个函数主要用于填充数据的时候快速计算需要多少个bar
 
@@ -1239,7 +1225,6 @@ class IBStore(with_metaclass(MetaSingleton, object)):
                 msg.date = datetime.utcfromtimestamp(long(dtstr))
 
         q.put(msg)
-
 
     # 获取交易周期的时间长度
     def getdurations(self,  timeframe, compression):

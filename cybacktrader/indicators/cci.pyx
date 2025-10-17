@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.functions import Max
 from cybacktrader.indicators.deviation import MeanDev

@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 import operator
 import sys
@@ -19,7 +16,6 @@ from cybacktrader.linebuffer import LineActions, LineNum
 from cybacktrader.lineseries import LineSeries, LineSeriesMaker
 from cybacktrader.dataseries import DataSeries
 from cybacktrader import metabase
-
 
 class MetaLineIterator(LineSeries.__class__):
     # 为LineIterator做一些处理工作
@@ -158,7 +154,6 @@ class MetaLineIterator(LineSeries.__class__):
             _obj._owner.addindicator(_obj)
 
         return _obj, args, kwargs
-
 
 class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     # _nextforce默认是False
@@ -416,7 +411,6 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         for data in self.datas:
             data.minbuffer(self._minperiod)
 
-
 # This 3 subclasses can be used for identification purposes within LineIterator
 # or even outside (like in LineObservers)
 # for the 3 subbranches without generating circular import references
@@ -431,18 +425,14 @@ class DataAccessor(LineIterator):
     PriceOpenInteres = DataSeries.OpenInterest
     PriceDateTime = DataSeries.DateTime
 
-
 class IndicatorBase(DataAccessor):
     pass
-
 
 class ObserverBase(DataAccessor):
     pass
 
-
 class StrategyBase(DataAccessor):
     pass
-
 
 # Utility class to couple lines/lineiterators which may have different lengths
 # Will only work when runonce=False is passed to Cerebro
@@ -464,7 +454,6 @@ class SingleCoupler(LineActions):
 
         self[0] = self.val
 
-
 class MultiCoupler(LineIterator):
     # 多条line的操作
     _ltype = LineIterator.IndType
@@ -484,7 +473,6 @@ class MultiCoupler(LineIterator):
 
         for i in range(self.dsize):
             self.lines[i][0] = self.dvals[i]
-
 
 def LinesCoupler(cdata, clock=None, **kwargs):
     # 如果是单条line，返回SingleCoupler
@@ -530,7 +518,6 @@ def LinesCoupler(cdata, clock=None, **kwargs):
 
     obj._clock = clock
     return obj
-
 
 # Add an alias (which seems a lot more sensible for "Single Line" lines
 LineCoupler = LinesCoupler

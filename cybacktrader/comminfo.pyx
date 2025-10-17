@@ -4,14 +4,10 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 # import datetime
 
 from cybacktrader.utils.py3 import with_metaclass
 from cybacktrader.metabase import MetaParams
-
 
 # 佣金类
 class CommInfoBase(with_metaclass(MetaParams)):
@@ -322,7 +318,6 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
           The formula: ``days * price * abs(size) * (interest / 365)``
 
-
         Params:
           - ``data``: data feed for which interest is charged
 
@@ -342,7 +337,6 @@ class CommInfoBase(with_metaclass(MetaParams)):
         provided as extra input for overridden methods
         """
         return days * self._creditrate * abs(size) * price
-
 
 # 佣金类，commission大小使用其本身
 class CommissionInfo(CommInfoBase):
@@ -366,7 +360,6 @@ class CommissionInfo(CommInfoBase):
     params = (
         ('percabs', True),  # Original CommissionInfo took 0.xx for percentages
     )
-
 
 class ComminfoDC(CommInfoBase):
     # 实现一个数字货币的佣金类
@@ -409,7 +402,6 @@ class ComminfoDC(CommInfoBase):
         if size < 0:
             return days * self._creditrate * position_value
 
-
 class ComminfoFuturesPercent(CommInfoBase):
     # write by myself,using in the future backtest,it means we should give a percent comminfo to broker
 
@@ -438,7 +430,6 @@ class ComminfoFuturesPercent(CommInfoBase):
     def get_margin(self, price):
         return price * self.p.mult * self.p.margin
 
-
 # comm_rb = CommInfoFutures(commission=1e-4, margin=0.09, mult=10.0)
 # cerebro = bt.Cerebro()
 # cerebro.broker.addcommissioninfo(comm_rb, name='RB')
@@ -457,7 +448,6 @@ class ComminfoFuturesFixed(CommInfoBase):
 
     def get_margin(self, price):
         return price * self.p.mult * self.p.margin
-
 
 class ComminfoFundingRate(CommInfoBase):
     # 实现一个数字货币的资金费率类

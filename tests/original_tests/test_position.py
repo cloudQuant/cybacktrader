@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader import position
-
 
 def test_run(main=False):
     size = 10
@@ -66,7 +62,6 @@ def test_run(main=False):
     assert pos.price == nprice
     assert opened == size + upsize
     assert closed == -size
-
 
 if __name__ == '__main__':
     test_run(main=True)

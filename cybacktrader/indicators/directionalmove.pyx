@@ -3,9 +3,9 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.atr import ATR
@@ -34,7 +34,6 @@ class UpMove(Indicator):
         self.lines.upmove = self.data - self.data(-1)
         super(UpMove, self).__init__()
 
-
 class DownMove(Indicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -54,7 +53,6 @@ class DownMove(Indicator):
     def __init__(self):
         self.lines.downmove = self.data(-1) - self.data
         super(DownMove, self).__init__()
-
 
 class _DirectionalIndicator(Indicator):
     '''
@@ -97,7 +95,6 @@ class _DirectionalIndicator(Indicator):
 
         super(_DirectionalIndicator, self).__init__()
 
-
 class DirectionalIndicator(_DirectionalIndicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -136,7 +133,6 @@ class DirectionalIndicator(_DirectionalIndicator):
         self.lines.plusDI = self.DIplus
         self.lines.minusDI = self.DIminus
 
-
 class PlusDirectionalIndicator(_DirectionalIndicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -174,7 +170,6 @@ class PlusDirectionalIndicator(_DirectionalIndicator):
 
         self.lines.plusDI = self.DIplus
 
-
 class MinusDirectionalIndicator(_DirectionalIndicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -211,7 +206,6 @@ class MinusDirectionalIndicator(_DirectionalIndicator):
         super(MinusDirectionalIndicator, self).__init__(_plus=False)
 
         self.lines.minusDI = self.DIminus
-
 
 class AverageDirectionalMovementIndex(_DirectionalIndicator):
     '''
@@ -255,7 +249,6 @@ class AverageDirectionalMovementIndex(_DirectionalIndicator):
 
         dx = abs(self.DIplus - self.DIminus) / (self.DIplus + self.DIminus)
         self.lines.adx = 100.0 * self.p.movav(dx, period=self.p.period)
-
 
 class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
     '''
@@ -301,7 +294,6 @@ class AverageDirectionalMovementIndexRating(AverageDirectionalMovementIndex):
 
         self.lines.adxr = (self.l.adx + self.l.adx(-self.p.period)) / 2.0
 
-
 class DirectionalMovementIndex(AverageDirectionalMovementIndex,
                                DirectionalIndicator):
     '''
@@ -335,7 +327,6 @@ class DirectionalMovementIndex(AverageDirectionalMovementIndex,
       - https://en.wikipedia.org/wiki/Average_directional_movement_index
     '''
     alias = ('DMI',)
-
 
 class DirectionalMovement(AverageDirectionalMovementIndexRating,
                           DirectionalIndicator):

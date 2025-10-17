@@ -4,16 +4,12 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from datetime import datetime
 import itertools
 
 from .. import feed, TimeFrame
 from cybacktrader.utils import date2num
 from ..utils.py3 import integer_types, string_types
-
 
 class GenericCSVData(feed.CSVDataBase):
     """Parses a CSV file according to the order and field presence defined by the
@@ -157,7 +153,6 @@ class GenericCSVData(feed.CSVDataBase):
             line[0] = float(csvfield)
 
         return True
-
 
 class GenericCSV(feed.CSVFeedBase):
     # 类，增加一个属性DataCls，把这个属性值设置成GenericCSVData

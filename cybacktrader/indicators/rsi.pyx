@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.functions import Max
 from cybacktrader.indicators.mabase import MovAv
@@ -37,7 +34,6 @@ class UpDay(Indicator):
         self.lines.upday = Max(self.data - self.data(-self.p.period), 0.0)
         super(UpDay, self).__init__()
 
-
 class DownDay(Indicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -58,7 +54,6 @@ class DownDay(Indicator):
     def __init__(self):
         self.lines.downday = Max(self.data(-self.p.period) - self.data, 0.0)
         super(DownDay, self).__init__()
-
 
 class UpDayBool(Indicator):
     '''
@@ -84,7 +79,6 @@ class UpDayBool(Indicator):
         self.lines.upday = self.data > self.data(-self.p.period)
         super(UpDayBool, self).__init__()
 
-
 class DownDayBool(Indicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -108,7 +102,6 @@ class DownDayBool(Indicator):
     def __init__(self):
         self.lines.downday = self.data(-self.p.period) > self.data
         super(DownDayBool, self).__init__()
-
 
 class RelativeStrengthIndex(Indicator):
     '''Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -189,10 +182,8 @@ class RelativeStrengthIndex(Indicator):
 
         return rs
 
-
 # Alias for compatibility
 RSI = RelativeStrengthIndex
-
 
 class RSI_Safe(RSI):
     '''
@@ -204,7 +195,6 @@ class RSI_Safe(RSI):
     '''
     params = (('safediv', True),)
 
-
 class RSI_SMA(RSI):
     '''
     Uses a SimpleMovingAverage as described in Wikipedia and other soures
@@ -215,7 +205,6 @@ class RSI_SMA(RSI):
     alias = ('RSI_Cutler',)
 
     params = (('movav', MovAv.Simple),)
-
 
 class RSI_EMA(RSI):
     '''

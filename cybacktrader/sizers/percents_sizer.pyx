@@ -4,13 +4,9 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 
 __all__ = ['PercentSizer', 'AllInSizer', 'PercentSizerInt', 'AllInSizerInt']
-
 
 # 百分比手数，根据可以利用的现金的百分比下单
 class PercentSizer(bt.Sizer):

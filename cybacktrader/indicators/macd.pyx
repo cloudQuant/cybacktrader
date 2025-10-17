@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.mabase import MovAv
 
@@ -51,7 +48,6 @@ class MACD(Indicator):
         self.lines.macd = me1 - me2
         self.lines.signal = self.p.movav(self.lines.macd,
                                          period=self.p.period_signal)
-
 
 class MACDHisto(MACD):
     '''

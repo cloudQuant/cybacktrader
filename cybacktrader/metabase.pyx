@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import sys
 import itertools
 import threading
@@ -62,7 +59,6 @@ def findbases(kls, topclass):
 
     return retval
 
-
 # 这个函数看起来还是不太容易理解的。虽然已经阅读过几遍了，但是看起来还是有点头大。这个函数比前一个函数用到的地方比较多，重点分析这个函数的意义。
 # itertools.count(start=0,step=1)用于生成从0开始的步长为1的无界限序列，需要使用break停止循环，在这个使用中，默认是从2开始的，每次步长为1
 # sys._getframe([depth])：从调用堆栈返回帧对象。如果可选参数depth是一个整数，返回在最顶级堆栈下多少层的调用的帧对象，如果这个depth高于调用的层数
@@ -104,7 +100,6 @@ def findowner(owned, cls, startlevel=2, skip=None):
                 return obj_
     # 前两种情况都不是的话，返回None
     return None
-
 
 # 这是一个看起来更加复杂的使用元编程的技巧,MetaParams是其子类，很多地方都在使用，为了能够搞懂MetaParams，需要对这个类有足够的了解.
 # csdn上有一篇文章讲解backtrader元类的，可以借鉴一下：https://blog.csdn.net/h00cker/article/details/121523010
@@ -433,7 +428,6 @@ class MetaParams(MetaBase):
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
-
 
 class ParamsBase(with_metaclass(MetaParams, object)):
     pass  # stub to allow easy subclassing without metaclasses

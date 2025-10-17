@@ -1,24 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import testcommon
 
 import cybacktrader as bt
 import cybacktrader.indicators as btind
 
-
 chkdatas = 1
-
 
 class RunStrategy(bt.Strategy):
     params = dict(main=False)
 
     def __init__(self):
         btind.SMA()
-
 
 def test_run(main=False):
     datas = [testcommon.getdata(i) for i in range(chkdatas)]
@@ -48,7 +42,6 @@ def test_run(main=False):
                 count += 1
 
             assert count == 256  # header + 256 lines data
-
 
 if __name__ == '__main__':
     test_run(main=True)

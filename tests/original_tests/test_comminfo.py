@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader import Position
-
 
 def check_stocks():
     commission = 0.5
@@ -32,7 +28,6 @@ def check_stocks():
 
     ca = comm.cashadjust(size, price, newprice)
     assert not ca
-
 
 def check_futures():
     commission = 0.5
@@ -61,11 +56,9 @@ def check_futures():
     ca = comm.cashadjust(size, price, newprice)
     assert ca == size * (newprice - price) * mult
 
-
 def test_run(main=False):
     check_stocks()
     check_futures()
-
 
 if __name__ == '__main__':
     test_run(main=True)

@@ -4,15 +4,11 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from datetime import datetime, timedelta
 
 from cybacktrader import TimeFrame
 from cybacktrader.utils.py3 import with_metaclass
 from .. import metabase
-
 
 class SessionFiller(with_metaclass(metabase.MetaParams, object)):
     """
@@ -169,7 +165,6 @@ class SessionFiller(with_metaclass(metabase.MetaParams, object)):
 
         return True
 
-
 class SessionFilterSimple(with_metaclass(metabase.MetaParams, object)):
     """
     This class can be applied to a data source as a filter and will filter out
@@ -196,7 +191,6 @@ class SessionFilterSimple(with_metaclass(metabase.MetaParams, object)):
         # Both ends of the comparison are in the session
         return not (
             data.p.sessionstart <= data.datetime.time(0) <= data.p.sessionend)
-
 
 class SessionFilter(with_metaclass(metabase.MetaParams, object)):
     """

@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import datetime
 import os
 import os.path
@@ -16,7 +13,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cybacktrader as bt
 import cybacktrader.utils.flushfile
 from cybacktrader.metabase import ParamsBase
-
 
 modpath = os.path.dirname(os.path.abspath(__file__))
 print("modpath", modpath)
@@ -31,7 +27,6 @@ DATAFEED = bt.feeds.BacktraderCSVData
 FROMDATE = datetime.datetime(2006, 1, 1)
 TODATE = datetime.datetime(2006, 12, 31)
 
-
 def getdata(index, fromdate=FROMDATE, todate=TODATE):
 
     datapath = os.path.join(modpath, dataspath, datafiles[index])
@@ -42,7 +37,6 @@ def getdata(index, fromdate=FROMDATE, todate=TODATE):
         todate=todate)
 
     return data
-
 
 def runtest(datas,
             strategy,
@@ -101,7 +95,6 @@ def runtest(datas,
                 cerebros.append(cerebro)
 
     return cerebros
-
 
 class TestStrategy(bt.Strategy):
     params = dict(main=False,
@@ -207,7 +200,6 @@ class TestStrategy(bt.Strategy):
                             assert chkval == linevals[i][0]
                         except AssertionError:
                             assert chkval == linevals[i][1]
-
 
 class SampleParamsHolder(ParamsBase):
     """

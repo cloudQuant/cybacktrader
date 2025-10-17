@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 import datetime
 import inspect
@@ -111,7 +108,6 @@ class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
             _obj._filters.append((fp, [], {}))
 
         return _obj, args, kwargs
-
 
 # 这个类是抽象数据基类，继承MetaAbstractDataBase和dataseries.OHLCDateTime
 class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
@@ -667,11 +663,9 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     def replay(self, **kwargs):
         self.addfilter(Replayer, **kwargs)
 
-
 # DataBase类，直接继承的是抽象的DataBase
 class DataBase(AbstractDataBase):
     pass
-
 
 # FeedBase类
 class FeedBase(with_metaclass(metabase.MetaParams, object)):
@@ -714,7 +708,6 @@ class FeedBase(with_metaclass(metabase.MetaParams, object)):
         kwargs['dataname'] = dataname
         return self.DataCls(**kwargs)
 
-
 # CSVDataBase的元类，继承自DataBase，在postinit的时候，给_obj设置_name属性
 class MetaCSVDataBase(DataBase.__class__):
     def dopostinit(cls, _obj, *args, **kwargs):
@@ -727,7 +720,6 @@ class MetaCSVDataBase(DataBase.__class__):
             super(MetaCSVDataBase, cls).dopostinit(_obj, *args, **kwargs)
 
         return _obj, args, kwargs
-
 
 class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
     """
@@ -819,7 +811,6 @@ class CSVDataBase(with_metaclass(MetaCSVDataBase, DataBase)):
         line = line.rstrip('\n')
         linetokens = line.split(self.separator)
         return linetokens
-
 
 class CSVFeedBase(FeedBase):
     # 设置参数

@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 import io
 import itertools
@@ -19,11 +16,9 @@ import cybacktrader as bt
 from cybacktrader.utils.py3 import (map, with_metaclass, string_types,
                                   integer_types)
 
-
 # WriterBase类
 class WriterBase(with_metaclass(bt.MetaParams, object)):
     pass
-
 
 # WriterFile类
 class WriterFile(WriterBase):

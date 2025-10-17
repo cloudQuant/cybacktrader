@@ -4,10 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from datetime import datetime, timedelta, time
 
 from cybacktrader.metabase import MetaParams
@@ -99,7 +95,6 @@ class TradingCalendarBase(with_metaclass(MetaParams, object)):
         # Next day must be greater than day. If the week changes is enough for
         # a week change even if the number is smaller (year change)
         return day.year != self._nextday(day)[0].year
-
 
 # 交易日历类
 class TradingCalendar(TradingCalendarBase):
@@ -214,7 +209,6 @@ class TradingCalendar(TradingCalendarBase):
                 opening = opening.replace(tzinfo=None)
 
             return opening, closing
-
 
 class PandasMarketCalendar(TradingCalendarBase):
     """

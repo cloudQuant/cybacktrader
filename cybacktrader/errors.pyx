@@ -4,12 +4,8 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 # 从from error import * 的时候，只导入下面两个类BacktraderError和StrategySkipError
 __all__ = ['BacktraderError', 'StrategySkipError']
-
 
 # BacktraderError类
 class BacktraderError(Exception):

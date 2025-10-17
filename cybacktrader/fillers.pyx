@@ -4,10 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from cybacktrader.utils.py3 import MAXINT, with_metaclass
 
 from cybacktrader.metabase import MetaParams
@@ -34,7 +30,6 @@ class FixedSize(with_metaclass(MetaParams, object)):
         size = self.p.size or MAXINT
         return min((order.data.volume[ago], abs(order.executed.remsize), size))
 
-
 # 固定百分比，用当前成交量的一定的百分比和需要下单的量对比，选择最小的进行交易
 class FixedBarPerc(with_metaclass(MetaParams, object)):
     """Returns the execution size for a given order using a *percentage* of the
@@ -55,7 +50,6 @@ class FixedBarPerc(with_metaclass(MetaParams, object)):
         maxsize = (order.data.volume[ago] * self.p.perc) // 100
         # Return the maximum possible executed volume
         return min(maxsize, abs(order.executed.remsize))
-
 
 # 根据bar的波动幅度按照百分比分配
 class BarPointPerc(with_metaclass(MetaParams, object)):

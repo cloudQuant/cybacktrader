@@ -7,11 +7,7 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicators.basicops import PeriodN
-
 
 __all__ = ['LaguerreRSI', 'LRSI', 'LaguerreFilter', 'LAGF']
 
@@ -72,7 +68,6 @@ class LaguerreRSI(PeriodN):
 
         den = cu + cd
         self.lines.lrsi[0] = 1.0 if not den else cu / den
-
 
 class LaguerreFilter(PeriodN):
     '''

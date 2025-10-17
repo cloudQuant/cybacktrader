@@ -4,14 +4,10 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import matplotlib.dates as mdates
 import matplotlib.ticker as mplticker
 
 from cybacktrader.utils import num2date
-
 
 class MyVolFormatter(mplticker.Formatter):
     Suffixes = ['', 'K', 'M', 'G', 'T', 'P']
@@ -35,7 +31,6 @@ class MyVolFormatter(mplticker.Formatter):
         y = int(y / self.divisor)
         return '%d%s' % (y, self.suffix)
 
-
 class MyDateFormatter(mplticker.Formatter):
     def __init__(self, dates, fmt='%Y-%m-%d'):
         self.dates = dates
@@ -52,7 +47,6 @@ class MyDateFormatter(mplticker.Formatter):
             ind = 0
 
         return num2date(self.dates[ind]).strftime(self.fmt)
-
 
 def patch_locator(locator, xdates):
     def _patched_datalim_to_dt(self):
@@ -80,7 +74,6 @@ def patch_locator(locator, xdates):
     bound_viewlim = _patched_viewlim_to_dt.__get__(locator, locator.__class__)
     locator.viewlim_to_dt = bound_viewlim
 
-
 def patch_formatter(formatter, xdates):
     def newcall(self, x, pos=0):
         if False and x < 0:
@@ -95,7 +88,6 @@ def patch_formatter(formatter, xdates):
 
     bound_call = newcall.__get__(formatter, formatter.__class__)
     formatter.__call__ = bound_call
-
 
 def getlocator(xdates, numticks=5, tz=None):
     span = xdates[-1] - xdates[0]

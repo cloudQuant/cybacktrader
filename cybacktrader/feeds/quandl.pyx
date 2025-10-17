@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from datetime import date, datetime
 import io
@@ -23,8 +20,6 @@ try:
     import quandl
 except ImportError:
     quandl = None
-
-
 
 __all__ = ['QuandlCSV', 'Quandl']
 
@@ -119,7 +114,6 @@ class QuandlCSV(feed.CSVDataBase):
         self.lines.volume[0] = v
 
         return True
-
 
 class Quandl(QuandlCSV):
     """

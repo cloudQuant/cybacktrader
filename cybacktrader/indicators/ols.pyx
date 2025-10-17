@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader.indicators.basicops import PeriodN
 import numpy as np
@@ -27,7 +24,6 @@ try:
 except ImportError:
     sm = None
     coint = None
-
 
 __all__ = ['OLS_Slope_InterceptN', 'OLS_TransformationN', 'OLS_BetaN',
            'CointN']
@@ -60,7 +56,6 @@ class OLS_Slope_InterceptN(PeriodN):
         self.lines.slope[0] = slope
         self.lines.intercept[0] = intercept
 
-
 class OLS_TransformationN(PeriodN):
     '''
     Calculates the ``zscore`` for data0 and data1. Although it doesn't directly
@@ -81,7 +76,6 @@ class OLS_TransformationN(PeriodN):
         self.l.spread_std = bt.ind.StdDev(spread, period=self.p.period)
         self.l.zscore = (spread - self.l.spread_mean) / self.l.spread_std
 
-
 class OLS_BetaN(PeriodN):
     '''
     Calculates a regression of data1 on data0 using ``pandas.ols``
@@ -101,7 +95,6 @@ class OLS_BetaN(PeriodN):
         y, x = (pd.Series(d.get(size=self.p.period)) for d in self.datas)
         r_beta = pd.ols(y=y, x=x, window_type='full_sample')
         self.lines.beta[0] = r_beta.beta['x']
-
 
 class CointN(PeriodN):
     '''

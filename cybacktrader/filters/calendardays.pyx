@@ -4,15 +4,11 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from datetime import date, datetime, timedelta
 
 from cybacktrader import TimeFrame
 from cybacktrader.utils.py3 import with_metaclass
 from .. import metabase
-
 
 class CalendarDays(with_metaclass(metabase.MetaParams, object)):
     """

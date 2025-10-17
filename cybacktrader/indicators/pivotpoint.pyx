@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.basicops import CmpEx
 
@@ -91,7 +88,6 @@ class PivotPoint(Indicator):
         if self.p._autoplot:
             self.plotinfo.plot = False  # disable own plotting
             self()  # Coupler to follow real object
-
 
 class FibonacciPivotPoint(Indicator):
     '''
@@ -177,7 +173,6 @@ class FibonacciPivotPoint(Indicator):
         if self.p._autoplot:
             self.plotinfo.plot = False  # disable own plotting
             self()  # Coupler to follow real object
-
 
 class DemarkPivotPoint(Indicator):
     '''

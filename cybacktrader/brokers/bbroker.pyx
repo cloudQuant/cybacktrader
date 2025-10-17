@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 import datetime
 
@@ -17,7 +14,6 @@ from cybacktrader.position import Position
 from cybacktrader.utils.py3 import string_types, integer_types
 
 __all__ = ['BackBroker', 'BrokerBack']
-
 
 # 这个是回测的时候使用的类
 class BackBroker(bt.BrokerBase):
@@ -72,7 +68,6 @@ class BackBroker(bt.BrokerBase):
 
         # 通常情况下不需要设置broker的参数，如果需要设置，通常具有下面的两种方法，第一种是创建一个broker的实例，然后cerebro.broker = instance
         # 第二种是使用cerebro.broker.set_xxx来设置不同的参数
-
 
       Params:
             # 下面是一些参数的意义
@@ -132,7 +127,6 @@ class BackBroker(bt.BrokerBase):
           # 会根据order,price,ago具体计算出可以下单的量
           # 参考文章：https://blog.csdn.net/qq_26948675/article/details/124566885?spm=1001.2014.3001.5501
           # https://yunjinqi.blog.csdn.net/article/details/113445040
-
 
         - ``slip_perc`` (default: ``0.0``) Percentage in absolute terms (and
           positive) that should be used to slip prices up/down for buy/sell
@@ -1454,7 +1448,6 @@ class BackBroker(bt.BrokerBase):
                 pos.adjbase = data.close[0]
 
         self._get_value()  # update value
-
 
 # Alias
 BrokerBack = BackBroker

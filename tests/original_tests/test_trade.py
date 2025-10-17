@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader import trade
-
 
 class FakeCommInfo(object):
     def getvaluesize(self, size, price):
@@ -14,7 +10,6 @@ class FakeCommInfo(object):
 
     def profitandloss(self, size, price, newprice):
         return 0
-
 
 class FakeData(object):
     '''
@@ -31,7 +26,6 @@ class FakeData(object):
     @property
     def close(self):
         return [0.0]
-
 
 def test_run(main=False):
     tr = trade.Trade(data=FakeData())
@@ -107,7 +101,6 @@ def test_run(main=False):
     assert tr.price == price  # no change ... we simple closed the operation
     # assert tr.value == upvalue
     assert tr.commission == commission + upcomm
-
 
 if __name__ == '__main__':
     test_run(main=True)

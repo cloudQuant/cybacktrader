@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 '''
 Redefine/Override matplotlib locators to make them work with index base x axis
 which can be converted from/to dates
@@ -42,7 +39,6 @@ def _idx2dt(idx, dates, tz):
 
     return num2date(dates[idx], tz)
 
-
 class RRuleLocator(RRLocator):
 
     def __init__(self, dates, o, tz=None):
@@ -75,7 +71,6 @@ class RRuleLocator(RRLocator):
         import bisect
         dtnums = super(RRuleLocator, self).tick_values(vmin, vmax)
         return [bisect.bisect_left(self._dates, x) for x in dtnums]
-
 
 class AutoDateLocator(ADLocator):
 
@@ -221,7 +216,6 @@ class AutoDateLocator(ADLocator):
             except Exception as e:
                 print("Error:", e)
         return locator
-
 
 class AutoDateFormatter(ADFormatter):
     def __init__(self, dates, locator, tz=None, defaultfmt='%Y-%m-%d'):

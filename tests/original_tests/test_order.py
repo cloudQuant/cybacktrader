@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader import Order, Position
-
 
 class FakeCommInfo(object):
     def getvaluesize(self, size, price):
@@ -20,7 +16,6 @@ class FakeCommInfo(object):
 
     def getcommission(self, size, price):
         return 0.0
-
 
 class FakeData(object):
     '''
@@ -37,7 +32,6 @@ class FakeData(object):
     @property
     def close(self):
         return [0.0]
-
 
 def _execute(position, order, size, price, partial):
     # Find position and do a real update - accounting happens here
@@ -65,7 +59,6 @@ def _execute(position, order, size, price, partial):
         order.partial()
     else:
         order.completed()
-
 
 def test_run(main=False):
     position = Position()

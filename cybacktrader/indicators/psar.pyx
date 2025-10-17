@@ -7,11 +7,7 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicators.basicops import PeriodN
-
 
 __all__ = ['ParabolicSAR', 'PSAR']
 
@@ -30,7 +26,6 @@ class _SarStatus(object):
         txt.append('af: {}'.format(self.af))
         txt.append('ep: {}'.format(self.ep))
         return '\n'.join(txt)
-
 
 class ParabolicSAR(PeriodN):
     '''

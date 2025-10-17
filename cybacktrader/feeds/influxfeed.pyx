@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 import backtrader.feed as feed
 from cybacktrader.utils import date2num
@@ -31,7 +28,6 @@ TIMEFRAMES = dict(
         (bt.TimeFrame.Years, 'y'),
     )
 )
-
 
 # backtrader从influxDB获取数据
 class InfluxDB(feed.DataBase):

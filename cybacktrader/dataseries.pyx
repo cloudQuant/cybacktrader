@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import datetime as _datetime
 from datetime import datetime
 import inspect
@@ -14,7 +11,6 @@ import inspect
 from cybacktrader.utils.py3 import range, with_metaclass
 from cybacktrader.lineseries import LineSeries
 from cybacktrader.utils import AutoOrderedDict, OrderedDict, date2num
-
 
 class TimeFrame(object):
     # 给TimeFrame这个类增加9个属性，用于区分交易的周期
@@ -25,7 +21,6 @@ class TimeFrame(object):
              'Days', 'Weeks', 'Months', 'Years', 'NoTimeFrame']
 
     names = Names  # support old naming convention
-
 
     # 类方法，获取Timeframe的周期类型
     @classmethod 
@@ -51,7 +46,6 @@ class TimeFrame(object):
     @classmethod
     def TName(cls, tframe):
         return cls.Names[tframe]
-
 
 class DataSeries(LineSeries):
     # 设置plotinfo相关的值
@@ -109,16 +103,13 @@ class DataSeries(LineSeries):
 
         return info
 
-
 class OHLC(DataSeries):
     # 继承DataSeries，lines剔除了datetime只剩下6条
     lines = ('close', 'low', 'high', 'open', 'volume', 'openinterest',)
 
-
 class OHLCDateTime(OHLC):
     # 继承DataSeries，lines只保留了datetime
     lines = (('datetime'),)
-
 
 class SimpleFilterWrapper(object):
     """Wrapper for filters added via .addfilter to turn them
@@ -151,7 +142,6 @@ class SimpleFilterWrapper(object):
             return True
 
         return False
-
 
 class _Bar(AutoOrderedDict):
     """

@@ -4,20 +4,15 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from collections import OrderedDict, defaultdict
 
 # from .py3 import values as py3lvalues
 from cybacktrader.utils.py3 import values as py3lvalues  #修改相对引用为绝对引用
 
-
 def Tree():
     # 不知道定义这个函数有什么用，其他地方没有用到过，忽略
     # 可以考虑删除
     return defaultdict(Tree)
-
 
 class AutoDictList(dict):
     # 继承字典，当访问缺失的的key的时候，将会自动生成一个key值，对应的value值是一个空的列表
@@ -25,7 +20,6 @@ class AutoDictList(dict):
     def __missing__(self, key):
         value = self[key] = list()
         return value
-
 
 class DotDict(dict):
     # If the attribut is not found in the usual places try the dict itself

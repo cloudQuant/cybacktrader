@@ -4,14 +4,10 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from datetime import datetime, timedelta
 
 from cybacktrader import AbstractDataBase, TimeFrame
-
 
 class DataFiller(AbstractDataBase):
     """This class will fill gaps in the source data using the following

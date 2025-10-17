@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from datetime import date, datetime, timedelta
 import threading
@@ -20,13 +17,10 @@ from cybacktrader.utils.py3 import with_metaclass
 
 from cybacktrader.stores import vcstore
 
-
-
 try:
     import visionchart
 except ImportError:
     visionchart = None
-
 
 class VCCommInfo(CommInfoBase):
     """
@@ -51,14 +45,12 @@ class VCCommInfo(CommInfoBase):
         # Same reasoning as above
         return abs(size) * price
 
-
 class MetaVCBroker(BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
         """Class has already been created ... register"""
         # Initialize the class
         super(MetaVCBroker, cls).__init__(name, bases, dct)
         vcstore.VCStore.BrokerCls = cls
-
 
 class VCBroker(with_metaclass(MetaVCBroker, BrokerBase)):
     """Broker implementation for VisualChart.

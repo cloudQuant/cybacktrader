@@ -4,16 +4,12 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.comminfo import CommInfoBase
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils.py3 import with_metaclass
 
 # from . import fillers as fillers
 # from . import fillers as filler
-
 
 # broker元类，使得get_cash与getcash,get_value与getvalue方法相同
 class MetaBroker(MetaParams):
@@ -29,7 +25,6 @@ class MetaBroker(MetaParams):
         for attr, trans in translations.items():
             if not hasattr(cls, attr):
                 setattr(cls, name, getattr(cls, trans))
-
 
 # broker基类
 class BrokerBase(with_metaclass(MetaBroker, object)):

@@ -7,12 +7,8 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.functions import And
-
 
 # 非0差分，记录最近一个不是0的差
 class NonZeroDifference(Indicator):

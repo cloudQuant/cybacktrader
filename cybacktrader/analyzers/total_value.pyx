@@ -1,12 +1,9 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 
 from collections import OrderedDict
 from cybacktrader import Analyzer
-
 
 class TotalValue(Analyzer):
     """This analyzer will get total value from every next.

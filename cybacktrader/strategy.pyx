@@ -4,9 +4,6 @@
 # Cython性能优化标记（保守设置）
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 import copy
 import datetime
@@ -1724,7 +1721,6 @@ class Strategy(with_metaclass(MetaStrategy, StrategyBase)):
         """
         data = data if data is not None else self.datas[0]
         return self._sizer.getsizing(data, isbuy=isbuy)
-
 
 # 信号策略元类，
 class MetaSigStrategy(Strategy.__class__):

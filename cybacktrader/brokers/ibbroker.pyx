@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from copy import copy
 from datetime import date, datetime, timedelta
@@ -33,9 +30,7 @@ try:
 except ImportError:
     ib = None
 
-
 bytes = bstr  # py2/3 need for ibpy
-
 
 # IB订单的状态
 
@@ -45,7 +40,6 @@ try:
     from ib.opt import ibConnection, message
 except ImportError:
     Contract = Order = ibConnection = message = None
-
 
 class IBOrderState(object):
     # wraps OrderState object and can print it
@@ -248,7 +242,6 @@ class MetaIBBroker(BrokerBase.__class__):
         # Initialize the class
         super(MetaIBBroker, cls).__init__(name, bases, dct)
         ibstore.IBStore.BrokerCls = cls
-
 
 # IBbroker
 class IBBroker(with_metaclass(MetaIBBroker, BrokerBase)):

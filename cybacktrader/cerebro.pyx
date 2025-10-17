@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import datetime
 import collections
 import itertools
@@ -31,14 +28,12 @@ from cybacktrader.tradingcal import (TradingCalendarBase, TradingCalendar,
                          PandasMarketCalendar)
 from cybacktrader.timer import Timer
 
-
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 class OptReturn(object):
     def __init__(self, params, **kwargs):
         self.p = self.params = params
         for k, v in kwargs.items():
             setattr(self, k, v)
-
 
 class Cerebro(with_metaclass(MetaParams, object)):
     """Params:
@@ -120,7 +115,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
         # 也和画图相关，oldtrades是True的时候，同一方向的交易没有区别，oldtrades是False的时候,
         # 不同的交易使用不同的标记
-
 
       - ``exactbars`` (default: ``False``)
 
@@ -216,7 +210,6 @@ class Cerebro(with_metaclass(MetaParams, object)):
         execution in ``83`` seconds to ``66``
          # optdatas设置成True，如果preload和runonce也是True的话，数据的预加载将会只进行一次，在
         # 优化参数的时候，可以节省很多的时间
-
 
       - ``optreturn`` (default: ``True``)
 

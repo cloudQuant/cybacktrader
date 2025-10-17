@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import time
 try:
     time_clock = time.process_time
@@ -15,7 +12,6 @@ import testcommon
 import cybacktrader as bt
 import cybacktrader.indicators as btind
 from cybacktrader.utils.py3 import PY2
-
 
 class RunStrategy(bt.Strategy):
     params = (
@@ -123,9 +119,7 @@ class RunStrategy(bt.Strategy):
             chkprice = '%.2f' % self.data.close[0]
             self.sellcreate.append(chkprice)
 
-
 chkdatas = 1
-
 
 def test_run(main=False):
     datas = [testcommon.getdata(i) for i in range(chkdatas)]
@@ -154,7 +148,6 @@ def test_run(main=False):
                 sval = '0.2794999999999983'
 
             assert str(analysis[next(iter(analysis.keys()))]) == sval
-
 
 if __name__ == '__main__':
     test_run(main=True)

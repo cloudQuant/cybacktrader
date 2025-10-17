@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader.analyzers.timereturn import TimeReturn
 
@@ -32,7 +29,6 @@ class Benchmark(TimeReturn):
 
         .. note:: this data must have been added to a ``cerebro`` instance with
                   ``addata``, ``resampledata`` or ``replaydata``.
-
 
       - ``_doprenext`` (default: ``False``)
 

@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from ..utils.py3 import with_metaclass
 
 from cybacktrader import Indicator
@@ -114,7 +111,6 @@ class MetaMovAv(type):
 # 移动平均的别名
 class MovAv(MovingAverage, metaclass=MetaMovAv):
     pass  # alias
-
 
 # 移动平均的基类
 class MetaMovAvBase(Indicator.__class__):

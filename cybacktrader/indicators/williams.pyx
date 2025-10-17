@@ -3,9 +3,9 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.basicops import Highest, Lowest, Accum
@@ -48,7 +48,6 @@ class WilliamsR(Indicator):
         self.lines.percR = -100.0 * (h - c) / (h - l)
 
         super(WilliamsR, self).__init__()
-
 
 class WilliamsAD(Indicator):
     '''

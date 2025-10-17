@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from copy import copy
 import datetime
@@ -16,7 +13,6 @@ from cybacktrader.utils.py3 import range, with_metaclass, iteritems
 
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils import AutoOrderedDict
-
 
 # 保存订单执行相关的信息，这个信息并不能决定订单是完全或者部分执行，它仅仅保存信息
 class OrderExecutionBit(object):
@@ -234,7 +230,6 @@ class OrderData(object):
         self.markpending()
         obj = copy(self)
         return obj
-
 
 class OrderBase(with_metaclass(MetaParams, object)):
     # 订单的基本参数

@@ -16,9 +16,6 @@ lines at once.
 # cython: boundscheck=False
 # cython: wraparound=False
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import sys
 
 from cybacktrader.utils.py3 import map, range, string_types, with_metaclass
@@ -27,7 +24,6 @@ from cybacktrader.linebuffer import LineBuffer, LineActions, LinesOperation, Lin
 from cybacktrader.lineroot import LineRoot, LineSingle, LineMultiple
 from cybacktrader.metabase import AutoInfoClass
 from cybacktrader import metabase
-
 
 class LineAlias(object):
     """ Descriptor class that store a line reference and returns that line
@@ -75,7 +71,6 @@ class LineAlias(object):
             value = value(0)
         # 给value这个line增加一个line，obj.lines[self.line]，到value.blindings,然后给line增加最小周期
         value.addbinding(obj.lines[self.line])
-
 
 class Lines(object):
     """
@@ -215,7 +210,6 @@ class Lines(object):
                         setattr(newcls, ename, desc)
 
         return newcls
-
 
     @classmethod
     def _getlinealias(cls, i):
@@ -362,7 +356,6 @@ class Lines(object):
         """
         # 返回line缓存的数据的长度
         return self.lines[line].buflen()
-
 
 class MetaLineSeries(LineMultiple.__class__):
     """
@@ -667,7 +660,6 @@ class MetaLineSeries(LineMultiple.__class__):
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
 
-
 class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
     # 创建一个LineSeries类
     
@@ -822,7 +814,6 @@ class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
     def advance(self, size=1):
         self.lines.advance(size)
 
-
 class LineSeriesStub(LineSeries):
     """Simulates a LineMultiple object based on LineSeries from a single line
 
@@ -888,7 +879,6 @@ class LineSeriesStub(LineSeries):
     def minbuffer(self, size):
         if not self.slave:
             super(LineSeriesStub, self).minbuffer(size)
-
 
 def LineSeriesMaker(arg, slave=False):
     # 创建lineseries

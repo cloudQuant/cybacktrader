@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from datetime import datetime, timedelta
 
 from cybacktrader.feed import DataBase
@@ -21,8 +18,6 @@ try:
     import oandapyV20
 except ImportError:
     oandapyV20 = None
-
-
 
 class MetaOandaData(DataBase.__class__):
     def __init__(cls, name, bases, dct):

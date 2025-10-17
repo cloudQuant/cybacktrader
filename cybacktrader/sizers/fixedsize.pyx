@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 
 # 固定手数类，如果下单的时候没有指定size,将会默认调用一个sizer
@@ -16,7 +13,6 @@ class FixedSize(bt.Sizer):
     Size can be controlled by number of tranches that a system
     wishes to use to scale into trades by specifying the ``tranches``
     parameter.
-
 
     Params:
       - ``stake`` (default: ``1``)
@@ -43,7 +39,6 @@ class FixedSize(bt.Sizer):
 # FixedSize的另一个名称
 SizerFix = FixedSize
 
-
 # 如果是开仓，使用stake手，如果是反手，使用两倍的stake手
 class FixedReverser(bt.Sizer):
     '''This sizer returns the needes fixed size to reverse an open position or
@@ -63,7 +58,6 @@ class FixedReverser(bt.Sizer):
         size = self.p.stake * (1 + (position.size != 0))
         return size
 
-
 # 固定目标手数，如果tranches大于1的话，会先把stake分成tranches份，然后计算当前持仓和每份持仓与stake的大小，选择比较小的作为下单的手数
 # 如果tranches不大于1，直接使用stake手数
 class FixedSizeTarget(bt.Sizer):
@@ -73,7 +67,6 @@ class FixedSizeTarget(bt.Sizer):
     Size can be controlled by number of tranches that a system
     wishes to use to scale into trades by specifying the ``tranches``
     parameter.
-
 
     Params:
       - ``stake`` (default: ``1``)

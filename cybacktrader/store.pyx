@@ -4,14 +4,10 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils.py3 import with_metaclass
-
 
 class MetaSingleton(MetaParams):
     """Metaclass to make a metaclassed class a singleton"""

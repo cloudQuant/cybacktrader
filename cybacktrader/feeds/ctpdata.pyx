@@ -1,8 +1,6 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from datetime import datetime
 
 from cybacktrader.feed import DataBase
@@ -20,9 +18,6 @@ try:
 except ImportError:
     vnpy = None
 
-
-
-
 try:
     from vnpy.api.ctp import MdApi, TdApi
 except ImportError:
@@ -32,7 +27,6 @@ except ImportError:
     except ImportError:
         MdApi = TdApi = None
 
-
 class MetaCTPData(DataBase.__class__):
     def __init__(cls, name, bases, dct):
         """Class has already been created ... register"""
@@ -40,7 +34,6 @@ class MetaCTPData(DataBase.__class__):
         super(MetaCTPData, cls).__init__(name, bases, dct)
         # Register with the store
         CTPStore.DataCls = cls
-
 
 class CTPData(with_metaclass(MetaCTPData, DataBase)):
     """CTP Data Feed.

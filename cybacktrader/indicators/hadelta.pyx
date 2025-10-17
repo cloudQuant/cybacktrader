@@ -3,16 +3,14 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 import cybacktrader as bt
 from cybacktrader.indicators.mabase import MovAv
 import numpy as np
 from numpy import log10, polyfit, sqrt, std, subtract, asarray
-
 
 __all__ = ['haDelta', 'haD']
 

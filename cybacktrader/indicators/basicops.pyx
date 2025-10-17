@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import functools
 import math
 import operator
@@ -17,7 +14,6 @@ import operator
 from ..utils.py3 import map, range
 
 from cybacktrader import Indicator
-
 
 # PeriodN这个类给整个系统增加了需要满足的最小的周期
 class PeriodN(Indicator):
@@ -32,7 +28,6 @@ class PeriodN(Indicator):
     def __init__(self):
         super(PeriodN, self).__init__()
         self.addminperiod(self.p.period)
-
 
 # 使用func计算过去N个周期的数据，func是一个可调用的函数
 class OperationN(PeriodN):
@@ -90,7 +85,6 @@ class ApplyN(BaseApplyN):
     '''
     lines = ('apply',)
 
-
 # 计算过去N个周期的最高价
 class Highest(OperationN):
     '''
@@ -105,7 +99,6 @@ class Highest(OperationN):
     lines = ('highest',)
     func = max
 
-
 # 计算过去N个周期的最低价
 class Lowest(OperationN):
     '''
@@ -119,7 +112,6 @@ class Lowest(OperationN):
     alias = ('MinN',)
     lines = ('lowest',)
     func = min
-
 
 # 模仿python的reduce功能
 class ReduceN(OperationN):
@@ -151,7 +143,6 @@ class ReduceN(OperationN):
 
         super(ReduceN, self).__init__()
 
-
 # 求过去N周期的和
 class SumN(OperationN):
     '''
@@ -165,7 +156,6 @@ class SumN(OperationN):
     '''
     lines = ('sumn',)
     func = math.fsum
-
 
 # 如果过去N周期有一个是True，就返回True
 class AnyN(OperationN):
@@ -242,7 +232,6 @@ class FindFirstIndexLowest(FindFirstIndex):
       - index = index of first data which is the lowest
     '''
     params = (('_evalfunc', min),)
-
 
 # 获取满足条件的最后一个的index
 class FindLastIndex(OperationN):

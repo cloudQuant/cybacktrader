@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import datetime
 import struct
 import os.path
@@ -21,7 +18,6 @@ try:
     import visionchart
 except ImportError:
     visionchart = None
-
 
 class VChartData(feed.DataBase):
     """
@@ -116,7 +112,6 @@ class VChartData(feed.DataBase):
         self.lines.openinterest[0] = oi
 
         return True
-
 
 class VChartFeed(feed.FeedBase):
     DataCls = VChartData

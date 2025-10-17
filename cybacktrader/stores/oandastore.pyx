@@ -4,18 +4,11 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from datetime import datetime, timedelta, timezone
 import time as _time
 import json
 import threading
-
-
-
-
 
 import oandapy
 import requests  # oandapy depdendency
@@ -31,8 +24,6 @@ try:
 except ImportError:
     oandapyV20 = None
 
-
-
 # Extend the exceptions to support extra cases
 
 class OandaRequestError(oandapy.OandaError):
@@ -40,24 +31,20 @@ class OandaRequestError(oandapy.OandaError):
         er = dict(code=599, message='Request Error', description='')
         super(self.__class__, self).__init__(er)
 
-
 class OandaStreamError(oandapy.OandaError):
     def __init__(self, content=''):
         er = dict(code=598, message='Failed Streaming', description=content)
         super(self.__class__, self).__init__(er)
-
 
 class OandaTimeFrameError(oandapy.OandaError):
     def __init__(self, content):
         er = dict(code=597, message='Not supported TimeFrame', description='')
         super(self.__class__, self).__init__(er)
 
-
 class OandaNetworkError(oandapy.OandaError):
     def __init__(self):
         er = dict(code=596, message='Network Error', description='')
         super(self.__class__, self).__init__(er)
-
 
 # oanda已经暂停国内的业务，并且这个API也不能使用了，忽略这个源代码
 class API(oandapy.API):
@@ -92,7 +79,6 @@ class API(oandapy.API):
             return oandapy.OandaError(content).error_response
 
         return content
-
 
 class Streamer(oandapy.Streamer):
     def __init__(self, q, headers=None, *args, **kwargs):
@@ -157,7 +143,6 @@ class Streamer(oandapy.Streamer):
         self.disconnect()
         self.q.put(OandaStreamError(data).error_response)
 
-
 class MetaSingleton(MetaParams):
     '''Metaclass to make a metaclassed class a singleton'''
     def __init__(cls, name, bases, dct):
@@ -170,7 +155,6 @@ class MetaSingleton(MetaParams):
                 super(MetaSingleton, cls).__call__(*args, **kwargs))
 
         return cls._singleton
-
 
 class OandaStore(with_metaclass(MetaSingleton, object)):
     '''Singleton class wrapping to control the connections to Oanda.

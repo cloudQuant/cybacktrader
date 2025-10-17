@@ -4,20 +4,14 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils.py3 import with_metaclass
-
 
 __all__ = ['Filter']
 
 # Filter元类
 class MetaFilter(MetaParams):
     pass
-
 
 # filter类
 class Filter(with_metaclass(MetaParams, object)):

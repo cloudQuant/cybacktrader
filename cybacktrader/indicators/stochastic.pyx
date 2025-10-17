@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.basicops import Highest, Lowest
 from cybacktrader.functions import Max, DivByZero
@@ -46,7 +43,6 @@ class _StochasticBase(Indicator):
 
         super(_StochasticBase, self).__init__()
 
-
 class StochasticFast(_StochasticBase):
     '''
     By Dr. George Lane in the 50s. It compares a closing price to the price
@@ -74,7 +70,6 @@ class StochasticFast(_StochasticBase):
         super(StochasticFast, self).__init__()
         self.lines.percK = self.k
         self.lines.percD = self.d
-
 
 class Stochastic(_StochasticBase):
     '''
@@ -104,7 +99,6 @@ class Stochastic(_StochasticBase):
         super(Stochastic, self).__init__()
         self.lines.percK = self.d
         self.l.percD = self.p.movav(self.l.percK, period=self.p.period_dslow)
-
 
 class StochasticFull(_StochasticBase):
     '''

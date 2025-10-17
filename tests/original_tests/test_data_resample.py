@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import testcommon
 
 import cybacktrader as bt
@@ -17,7 +14,6 @@ chkvals = [
 chkmin = 30  # period will be in weeks
 chkind = [btind.SMA]
 chkargs = dict()
-
 
 def test_run(main=False):
     for runonce in [True, False]:
@@ -34,7 +30,6 @@ def test_run(main=False):
                            chkmin=chkmin,
                            chkvals=chkvals,
                            chkargs=chkargs)
-
 
 if __name__ == '__main__':
     test_run(main=True)

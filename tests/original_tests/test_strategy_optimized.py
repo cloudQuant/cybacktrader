@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import itertools
 import time
 try:
@@ -41,7 +38,6 @@ CHKCASH = [
 
 _chkvalues = []
 _chkcash = []
-
 
 class RunStrategy(bt.Strategy):
     params = (
@@ -97,9 +93,7 @@ class RunStrategy(bt.Strategy):
         elif self.cross < 0.0:
             self.orderid = self.close()
 
-
 chkdatas = 1
-
 
 def test_run(main=False):
     global _chkvalues
@@ -140,7 +134,6 @@ def test_run(main=False):
                     print(CHKCASH)
                     print('-' * 50)
                     print(_chkcash)
-
 
 if __name__ == '__main__':
     test_run(main=True)

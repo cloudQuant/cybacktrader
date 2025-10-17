@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from datetime import date, datetime, time
 
 from .. import feed
@@ -44,7 +41,6 @@ class BacktraderCSVData(feed.CSVDataBase):
         self.lines.openinterest[0] = float(next(itoken))
 
         return True
-
 
 class BacktraderCSV(feed.CSVFeedBase):
     # 类，DataCls设置了值为BacktraderCSVData类

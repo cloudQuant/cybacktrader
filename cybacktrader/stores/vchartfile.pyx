@@ -4,20 +4,14 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import os.path
 
 import cybacktrader as bt
-
-
 
 try:
     import visionchart
 except ImportError:
     visionchart = None
-
 
 class VChartFile(bt.Store):
     '''Store provider for Visual Chart binary files

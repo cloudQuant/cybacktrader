@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 # Import pyecharts (optional dependency for plotting)
 try:
     from pyecharts.charts import Kline, Line, Bar, Grid, EffectScatter
@@ -59,7 +56,6 @@ import plotly.offline as py
 import plotly.figure_factory as ff
 import copy
 
-
 def cal_macd_system(data, short_=26, long_=12, m=9):
     '''
     data是包含高开低收成交量的标准dataframe
@@ -71,7 +67,6 @@ def cal_macd_system(data, short_=26, long_=12, m=9):
     data['dea'] = data['diff'].ewm(adjust=False, alpha=2 / (m + 1), ignore_na=True).mean()
     data['macd'] = 2 * (data['diff'] - data['dea'])
     return data
-
 
 def split_data(df) -> dict:
     datas = list(zip(df['open'], df['close'], df['low'], df['high'], df['volume'], df['up_bar']))
@@ -89,7 +84,6 @@ def split_data(df) -> dict:
         "difs": difs,
         "deas": deas,
     }
-
 
 def get_up_scatter(df):
     # 标记出上涨的点，格式是列表，列表里面是（时间、最低价)组成的元组
@@ -122,7 +116,6 @@ def get_up_scatter(df):
         # print(mark_line_data[:10])
     return mark_line_data
 
-
 def get_dn_scatter(df):
     # 标记出下跌的点，格式是列表，列表里面是（时间、最高价)组成的元组
     mark_line_data = []
@@ -153,7 +146,6 @@ def get_dn_scatter(df):
         pre_high = high
     # print(mark_line_data[:10])
     return mark_line_data
-
 
 def get_valid_point(df):
     valid_dn_point_list = []
@@ -208,7 +200,6 @@ def get_valid_point(df):
         pre_high = high
     # print(mark_line_data[:10])
     return valid_dn_point_list, valid_up_point_list
-
 
 def draw_chart(data, df, bk_list, bp_list, sk_list, sp_list):
     kline = (
@@ -676,7 +667,6 @@ def draw_chart(data, df, bk_list, bp_list, sk_list, sp_list):
     )
     grid_chart.render("c:/result/test_price_action_kline_chart.html")
 
-
 class PInfo(object):
     def __init__(self, sch):
         self.sch = sch
@@ -722,7 +712,6 @@ class PInfo(object):
 
     def zordercur(self, ax):
         return self.zorder[ax]
-
 
 class Plot_OldSync(with_metaclass(MetaParams, object)):
     params = (('scheme', PlotScheme()),)
@@ -1505,7 +1494,6 @@ class Plot_OldSync(with_metaclass(MetaParams, object)):
             else:
                 self.dplotsover[key].append(x)
 
-
 def plot_results(results, file_name):
     '''write by myself to plot the result,and I will update this function'''
     # 总的杠杆
@@ -1591,9 +1579,7 @@ def plot_results(results, file_name):
     fig = go.Figure(data=data, layout=layout)
     py.offline.plot(fig, filename=file_name, auto_open=False)
 
-
 Plot = Plot_OldSync
-
 
 def create_table(df, max_rows=18):
     """基于dataframe，设置表格格式"""
@@ -1619,7 +1605,6 @@ def create_table(df, max_rows=18):
         ]
     )
     return table
-
 
 def get_rate_sharpe_drawdown(data):
     # 计算夏普率，复利年化收益率，最大回撤率
@@ -1679,7 +1664,6 @@ def get_rate_sharpe_drawdown(data):
     except:
         return np.NaN, np.NaN, np.NaN
 
-
 def get_year_return(data):
     '''计算每年的年化收益率'''
     data.index = pd.to_datetime(data.index)
@@ -1695,7 +1679,6 @@ def get_year_return(data):
     data.index = pd.to_datetime(data.datetime)
     data = data[['return', 'datetime']]
     return data
-
 
 def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimize=True, auto_open=True, result_path=''):
     strategy_name = strategy.__name__
@@ -2247,7 +2230,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #         df0.to_csv("C:/result/"+strategy_name+params_str+"斜率策略总的账户价值.csv")
 #         sharpe_ratio,average_rate,max_drawdown_rate = get_rate_sharpe_drawdown(df0)
 
-
 #         performance_dict['calmar_ratio']=calmar_ratio
 #         performance_dict['average_drawdown_len']=average_drawdown_len
 #         performance_dict['average_drawdown_rate']=average_drawdown_rate
@@ -2371,7 +2353,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #             short_lost_total_pnl=np.NaN
 #             short_lost_max_pnl=np.NaN
 
-
 #         trade_dict_2['long_num']=long_num
 #         trade_dict_2['long_win_num']=long_win_num
 #         trade_dict_2['long_lost_num']=long_lost_num
@@ -2391,7 +2372,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #         trade_dict_2['short_lost_total_pnl']=short_lost_total_pnl
 #         trade_dict_2['short_lost_max_pnl']=short_lost_max_pnl
 
-
 #         len(performance_dict)==len(trade_dict_2)==len(trade_dict_1)
 #         df00=pd.DataFrame(index=range(18))
 #         df01=pd.DataFrame([performance_dict]).T
@@ -2407,7 +2387,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #         df00['多空交易指标']=df03.index
 #         df00['多空交易指标值']=[round(float(i),4) for i in list(df03['多空交易指标值'])]
 
-
 #         if plot is True:
 
 #             df00.to_csv(result_path+strategy.__name__+params_str+'.csv',encoding='gbk')
@@ -2422,7 +2401,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #             df1=pd.DataFrame([results[0].analyzers._GrossLeverage.get_analysis()]).T
 #             df1.columns=['GrossLeverage']
 
-
 #             # 滚动的对数收益率
 #             # df2=pd.DataFrame([results[0].analyzers._LogReturnsRolling.get_analysis()]).T
 #             # df2.columns=['log_return']
@@ -2436,7 +2414,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #             df4['total_position_value']=df4.sum(axis=1)
 
 #             # 定义表格组件
-
 
 #             app = dash.Dash()
 #             # app = JupyterDash('策略评估结果')
@@ -2501,7 +2478,6 @@ def run_cerebro_and_plot(cerebro, strategy, params, score=90, port=8050, optimiz
 #                         )
 #                     ),
 #                     create_table(df00)
-
 
 #                 ]
 #             )

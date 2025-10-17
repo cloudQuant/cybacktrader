@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from datetime import datetime
 from struct import unpack
 import os.path
@@ -14,13 +11,10 @@ import os.path
 import cybacktrader as bt
 from cybacktrader import date2num  # avoid dict lookups
 
-
-
 try:
     import visionchart
 except ImportError:
     visionchart = None
-
 
 class MetaVChartFile(bt.DataBase.__class__):
     def __init__(cls, name, bases, dct):
@@ -30,8 +24,6 @@ class MetaVChartFile(bt.DataBase.__class__):
 
         # Register with the store
         bt.stores.VChartFile.DataCls = cls
-
-
 
 class VChartFile(bt.with_metaclass(MetaVChartFile, bt.DataBase)):
     """

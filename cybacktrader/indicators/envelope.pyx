@@ -3,15 +3,14 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 import sys
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.mabase import MovingAverage
-
 
 # 装饰其他指标，给其他指标值设定了一个百分比的上下限
 class EnvelopeMixIn(object):
@@ -60,7 +59,6 @@ class _EnvelopeBase(Indicator):
         self.lines.src = self.data
         super(_EnvelopeBase, self).__init__()
 
-
 class Envelope(_EnvelopeBase, EnvelopeMixIn):
     '''
     It creates envelopes bands separated from the source data by a given
@@ -74,7 +72,6 @@ class Envelope(_EnvelopeBase, EnvelopeMixIn):
     See also:
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:moving_average_envelopes
     '''
-
 
 # Automatic creation of Moving Average Envelope classes
 

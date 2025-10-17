@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from datetime import date, datetime
 import io
@@ -18,7 +15,6 @@ from ..utils.py3 import (urlopen, urlquote, ProxyHandler, build_opener,
 import cybacktrader as bt
 from .. import feed
 from cybacktrader.utils import date2num
-
 
 class YahooFinanceCSVData(feed.CSVDataBase):
     """
@@ -176,7 +172,6 @@ class YahooFinanceCSVData(feed.CSVDataBase):
 
         return True
 
-
 class YahooLegacyCSV(YahooFinanceCSVData):
     """
     This is intended to load files which were downloaded before Yahoo
@@ -187,10 +182,8 @@ class YahooLegacyCSV(YahooFinanceCSVData):
         ('version', ''),
     )
 
-
 class YahooFinanceCSV(feed.CSVFeedBase):
     DataCls = YahooFinanceCSVData
-
 
 # todo 有时间测试一下这个类还能不能使用，如果可以用，尝试进行注释
 class YahooFinanceData(YahooFinanceCSVData):
@@ -355,8 +348,6 @@ class YahooFinanceData(YahooFinanceCSVData):
 
         # Prepared a "path" file -  CSV Parser can take over
         super(YahooFinanceData, self).start()
-
-
 
 class YahooFinance(feed.CSVFeedBase):
     DataCls = YahooFinanceData

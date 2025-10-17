@@ -4,16 +4,11 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader.indicators.awesomeoscillator import AwesomeOscillator
 from cybacktrader.indicators.mabase import MovAv
 
-
 __all__ = ['AccelerationDecelerationOscillator', 'AccDeOsc']
-
 
 class AccelerationDecelerationOscillator(bt.Indicator):
     '''

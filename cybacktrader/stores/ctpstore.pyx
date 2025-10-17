@@ -1,8 +1,6 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import collections
 from datetime import datetime
 from time import sleep
@@ -22,9 +20,6 @@ try:
 except ImportError:
     vnpy = None
 
-
-
-
 try:
     from vnpy.api.ctp import MdApi, TdApi
 except ImportError:
@@ -33,7 +28,6 @@ except ImportError:
         MdApi = TdApi = ctp
     except ImportError:
         MdApi = TdApi = None
-
 
 class MyCtpbeeApi(CtpbeeApi):
 
@@ -158,7 +152,6 @@ class MyCtpbeeApi(CtpbeeApi):
         # print('on_account', account)
         self.is_account_ok = True
 
-
 class MetaSingleton(MetaParams):
     """Metaclass to make a metaclassed class a singleton"""
 
@@ -170,7 +163,6 @@ class MetaSingleton(MetaParams):
         if cls._singleton is None:
             cls._singleton = super(MetaSingleton, cls).__call__(*args, **kwargs)
         return cls._singleton
-
 
 class CTPStore(with_metaclass(MetaSingleton, object)):
     """

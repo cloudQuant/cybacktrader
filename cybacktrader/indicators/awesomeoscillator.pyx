@@ -4,15 +4,10 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import cybacktrader as bt
 from cybacktrader.indicators.mabase import MovAv
 
-
 __all__ = ['AwesomeOscillator', 'AwesomeOsc', 'AO']
-
 
 # AwesomeOscillator指标
 class AwesomeOscillator(bt.Indicator):
@@ -20,7 +15,6 @@ class AwesomeOscillator(bt.Indicator):
     Awesome Oscillator (AO) is a momentum indicator reflecting the precise
     changes in the market driving force which helps to identify the trend’s
     strength up to the points of formation and reversal.
-
 
     Formula:
      - median price = (high + low) / 2

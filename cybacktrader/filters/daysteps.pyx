@@ -4,10 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 class BarReplayer_Open(object):
     """
     This filters splits a bar in two parts:
@@ -64,7 +60,6 @@ class BarReplayer_Open(object):
             return True  # something delivered
 
         return False  # nothing delivered here
-
 
 # Alias
 DayStepsFilter = BarReplayer_Open

@@ -7,11 +7,7 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import sys
-
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.mabase import MovingAverage
@@ -43,7 +39,6 @@ class OscillatorMixIn(Indicator):
     def __init__(self):
         self.lines[0] = self.data - self.lines[0]
         super(OscillatorMixIn, self).__init__()
-
 
 class Oscillator(Indicator):
     '''
@@ -88,7 +83,6 @@ class Oscillator(Indicator):
             self.dataosc = self.data
 
         self.lines[0] = datasrc - self.dataosc
-
 
 # Automatic creation of Oscillating Lines
 

@@ -4,8 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function, unicode_literals)
-
 import time
 from datetime import datetime
 from functools import wraps
@@ -21,8 +19,6 @@ from ccxt.base.errors import NetworkError, ExchangeError
 
 # Import external dependencies (already added by previous script)
 
-
-
 class MetaSingleton(MetaParams):
     '''Metaclass to make a metaclassed class a singleton'''
 
@@ -35,7 +31,6 @@ class MetaSingleton(MetaParams):
             cls._singleton = (super(MetaSingleton, cls).__call__(*args, **kwargs))
 
         return cls._singleton
-
 
 class CCXTStore(with_metaclass(MetaSingleton, object)):
     """API provider for CCXT feed and broker classes.

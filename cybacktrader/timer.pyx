@@ -4,10 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 import bisect
 import collections
 from datetime import date, datetime, timedelta
@@ -19,13 +15,11 @@ from cybacktrader.utils import date2num, num2date
 from cybacktrader.utils.py3 import integer_types, range, with_metaclass
 from cybacktrader.utils import TIME_MAX
 
-
 #  from timer import *  只能import这几个常量和类
 __all__ = ['SESSION_TIME', 'SESSION_START', 'SESSION_END', 'Timer']
 
 # 这三个常量的值
 SESSION_TIME, SESSION_START, SESSION_END = range(3)
-
 
 # Timer类
 class Timer(with_metaclass(MetaParams, object)):

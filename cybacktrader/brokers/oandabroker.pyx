@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import collections
 from copy import copy
 from datetime import date, datetime, timedelta
@@ -29,8 +26,6 @@ try:
 except ImportError:
     oandapyV20 = None
 
-
-
 class OandaCommInfo(CommInfoBase):
     def getvaluesize(self, size, price):
         # In real life the margin approaches the price
@@ -41,14 +36,12 @@ class OandaCommInfo(CommInfoBase):
         # Same reasoning as above
         return abs(size) * price
 
-
 class MetaOandaBroker(BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
         """Class has already been created ... register"""
         # Initialize the class
         super(MetaOandaBroker, cls).__init__(name, bases, dct)
         oandastore.OandaStore.BrokerCls = cls
-
 
 class OandaBroker(with_metaclass(MetaOandaBroker, BrokerBase)):
     """Broker implementation for Oanda.

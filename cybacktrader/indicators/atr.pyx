@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.functions import Max, Min
 from cybacktrader.indicators.mabase import MovAv
@@ -32,7 +29,6 @@ class TrueHigh(Indicator):
         self.lines.truehigh = Max(self.data.high, self.data.close(-1))
         super(TrueHigh, self).__init__()
 
-
 class TrueLow(Indicator):
     '''
     Defined by J. Welles Wilder, Jr. in 1978 in his book *"New Concepts in
@@ -52,7 +48,6 @@ class TrueLow(Indicator):
     def __init__(self):
         self.lines.truelow = Min(self.data.low, self.data.close(-1))
         super(TrueLow, self).__init__()
-
 
 class TrueRange(Indicator):
     '''
@@ -83,10 +78,8 @@ TR = TrueRange
         self.lines.tr = TrueHigh(self.data) - TrueLow(self.data)
         super(TrueRange, self).__init__()
 
-
 # Alias for compatibility
 TR = TrueRange
-
 
 class AverageTrueRange(Indicator):
     '''

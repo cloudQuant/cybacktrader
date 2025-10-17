@@ -4,14 +4,10 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from colorsys import rgb_to_hls as rgb2hls, hls_to_rgb as hls2rgb
 
 import matplotlib.colors as mplcolors
 import matplotlib.path as mplpath
-
 
 def tag_box_style(x0, y0, width, height, mutation_size, mutation_aspect=1):
     """
@@ -47,7 +43,6 @@ def tag_box_style(x0, y0, width, height, mutation_size, mutation_aspect=1):
     path = mplpath.Path(cp, com)
 
     return path
-
 
 def shade_color(color, percent):
     """Shade Color

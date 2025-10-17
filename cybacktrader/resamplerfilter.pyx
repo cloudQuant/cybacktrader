@@ -4,17 +4,12 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from datetime import datetime, date, timedelta, timezone
 
 from cybacktrader.dataseries import TimeFrame, _Bar
 from cybacktrader.utils.py3 import with_metaclass
 from cybacktrader import metabase
 from cybacktrader.utils.date import date2num, num2date
-
 
 # 这个类仅仅用在了_checkbarover这样一个函数中
 # chkdata = DTFaker(data, forcedata) if fromcheck else data
@@ -510,7 +505,6 @@ class _BaseResampler(with_metaclass(metabase.MetaParams, object)):
         self.bar.datetime = dtnum
         return True
 
-
 # 把小周期的数据抽样形成大周期的数据
 class Resampler(_BaseResampler):
     """This class resamples data of a given timeframe to a larger timeframe.
@@ -801,54 +795,41 @@ class Replayer(_BaseResampler):
 
         return False  # the existing bar can be processed by the system
 
-
 class ResamplerTicks(Resampler):
     params = (('timeframe', TimeFrame.Ticks),)
-
 
 class ResamplerSeconds(Resampler):
     params = (('timeframe', TimeFrame.Seconds),)
 
-
 class ResamplerMinutes(Resampler):
     params = (('timeframe', TimeFrame.Minutes),)
-
 
 class ResamplerDaily(Resampler):
     params = (('timeframe', TimeFrame.Days),)
 
-
 class ResamplerWeekly(Resampler):
     params = (('timeframe', TimeFrame.Weeks),)
-
 
 class ResamplerMonthly(Resampler):
     params = (('timeframe', TimeFrame.Months),)
 
-
 class ResamplerYearly(Resampler):
     params = (('timeframe', TimeFrame.Years),)
-
 
 class ReplayerTicks(Replayer):
     params = (('timeframe', TimeFrame.Ticks),)
 
-
 class ReplayerSeconds(Replayer):
     params = (('timeframe', TimeFrame.Seconds),)
-
 
 class ReplayerMinutes(Replayer):
     params = (('timeframe', TimeFrame.Minutes),)
 
-
 class ReplayerDaily(Replayer):
     params = (('timeframe', TimeFrame.Days),)
 
-
 class ReplayerWeekly(Replayer):
     params = (('timeframe', TimeFrame.Weeks),)
-
 
 class ReplayerMonthly(Replayer):
     params = (('timeframe', TimeFrame.Months),)

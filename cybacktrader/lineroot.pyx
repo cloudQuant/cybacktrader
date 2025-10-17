@@ -14,15 +14,12 @@ to define interfaces and hierarchy for the real operational classes
 .moduleauthor:: Daniel Rodriguez
 
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 
 import operator
 from cybacktrader import metabase
 from cybacktrader.utils.py3 import range, with_metaclass
 # from utils.py3 import range, with_metaclass
 # import metabase
-
 
 class MetaLineRoot(metabase.MetaParams):
     """
@@ -53,7 +50,6 @@ class MetaLineRoot(metabase.MetaParams):
 
         # Parameter values have now been set before __init__
         return _obj, args, kwargs
-
 
 class LineRoot(with_metaclass(MetaLineRoot, object)):
     """
@@ -344,7 +340,6 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
     # the class has redefined __eq__
     __hash__ = object.__hash__
 
-
 class LineMultiple(LineRoot):
     """
     Base class for LineXXX instances that hold more than one line
@@ -403,7 +398,6 @@ class LineMultiple(LineRoot):
         for line in self.lines:
             line.minbuffer(size)
 
-
 class LineSingle(LineRoot):
     """
     Base class for LineXXX instances that hold a single line
@@ -422,5 +416,4 @@ class LineSingle(LineRoot):
         Increment the minperiod with no considerations
         """
         self._minperiod += minperiod
-
 

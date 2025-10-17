@@ -4,12 +4,8 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.basicops import FindFirstIndexHighest, FindFirstIndexLowest
-
 
 # 这个文件是设计了几个计算AROON相关指标的类
 class _AroonBase(Indicator):
@@ -53,7 +49,6 @@ class _AroonBase(Indicator):
 
         super(_AroonBase, self).__init__()
 
-
 class AroonUp(_AroonBase):
     '''
     This is the AroonUp from the indicator AroonUpDown developed by Tushar
@@ -82,7 +77,6 @@ class AroonUp(_AroonBase):
         super(AroonUp, self).__init__()
 
         self.lines.aroonup = self.up
-
 
 class AroonDown(_AroonBase):
     '''
@@ -113,7 +107,6 @@ class AroonDown(_AroonBase):
 
         self.lines.aroondown = self.down
 
-
 class AroonUpDown(AroonUp, AroonDown):
     '''
     Developed by Tushar Chande in 1995.
@@ -138,7 +131,6 @@ class AroonUpDown(AroonUp, AroonDown):
       - http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:aroon
     '''
     alias = ('AroonIndicator',)
-
 
 class AroonOscillator(_AroonBase):
     '''
@@ -170,7 +162,6 @@ class AroonOscillator(_AroonBase):
         super(AroonOscillator, self).__init__()
 
         self.lines.aroonosc = self.up - self.down
-
 
 class AroonUpDownOscillator(AroonUpDown, AroonOscillator):
     '''

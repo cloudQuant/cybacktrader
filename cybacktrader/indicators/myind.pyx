@@ -4,8 +4,6 @@
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
 
 import cybacktrader as bt
 import numpy as np
@@ -25,7 +23,6 @@ class MaBetweenHighAndLow(bt.Indicator):
         self.ma_less_high = self.ma < self.high
         self.ma_more_low = self.ma > self.low
         self.lines.target = bt.And(self.ma_more_low, self.ma_less_high)
-
 
 class BarsLast(bt.Indicator):
     # 这个指标用于分析最近一次满足条件之后到现在的bar的个数
@@ -66,7 +63,6 @@ class NewDiff(bt.Indicator):
         f = bt.Max(self.data.high, pre_close)
         b = bt.If(close > pre_close, e, f)
         self.a = bt.If(close == pre_close, 0, close - b)
-
 
     def next(self):
         if len(self.a) >= self.p.period:

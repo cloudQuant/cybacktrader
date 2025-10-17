@@ -1,8 +1,6 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import collections
 
 from cybacktrader import BrokerBase, Order, BuyOrder, SellOrder
@@ -17,9 +15,6 @@ try:
 except ImportError:
     vnpy = None
 
-
-
-
 try:
     from vnpy.api.ctp import MdApi, TdApi
 except ImportError:
@@ -29,14 +24,12 @@ except ImportError:
     except ImportError:
         MdApi = TdApi = None
 
-
 class MetaCTPBroker(BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
         """Class has already been created ... register"""
         # Initialize the class
         super(MetaCTPBroker, cls).__init__(name, bases, dct)
         CTPStore.BrokerCls = cls
-
 
 class CTPBroker(with_metaclass(MetaCTPBroker, BrokerBase)):
     """Broker implementation for ctp

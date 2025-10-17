@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.utils.py3 import filter, string_types, integer_types
 
 from cybacktrader import date2num
@@ -17,7 +14,6 @@ try:
     import pandas as pd
 except ImportError:
     pd = None
-
 
 # backtrader通过pandas加载数据
 class PandasDirectData(feed.DataBase):
@@ -100,7 +96,6 @@ class PandasDirectData(feed.DataBase):
 
         # Done ... return
         return True
-
 
 class PandasData(feed.DataBase):
     """

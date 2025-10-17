@@ -3,18 +3,15 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.percentrank import PercentRank
 from cybacktrader.indicators.sma import SMA
 
-
 __all__ = ['DV2']
-
 
 # RSI指标的替代品
 class DV2(Indicator):

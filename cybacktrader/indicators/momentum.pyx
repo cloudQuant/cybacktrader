@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 
 # 动量指标，动量震荡指标，ROC指标，ROC指标乘以100
@@ -17,7 +14,6 @@ class Momentum(Indicator):
     '''
     Measures the change in price by calculating the difference between the
     current price and the price from a given period ago
-
 
     Formula:
       - momentum = data - data_period
@@ -32,7 +28,6 @@ class Momentum(Indicator):
     def __init__(self):
         self.l.momentum = self.data - self.data(-self.p.period)
         super(Momentum, self).__init__()
-
 
 class MomentumOscillator(Indicator):
     '''
@@ -64,7 +59,6 @@ class MomentumOscillator(Indicator):
         self.l.momosc = 100.0 * (self.data / self.data(-self.p.period))
         super(MomentumOscillator, self).__init__()
 
-
 class RateOfChange(Indicator):
     '''
     Measures the ratio of change in prices over a period
@@ -87,7 +81,6 @@ class RateOfChange(Indicator):
         dperiod = self.data(-self.p.period)
         self.l.roc = (self.data - dperiod) / dperiod
         super(RateOfChange, self).__init__()
-
 
 class RateOfChange100(Indicator):
     '''

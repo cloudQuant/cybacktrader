@@ -3,9 +3,9 @@
 
 # Cython性能优化标记
 # cython: language_level=3
-
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from cybacktrader.indicator import Indicator
 from cybacktrader.indicators.mabase import MovAv
@@ -53,7 +53,6 @@ class Trix(Indicator):
         self.lines.trix = 100.0 * (ema3 / ema3(-self.p._rocperiod) - 1.0)
 
         super(Trix, self).__init__()
-
 
 class TrixSignal(Trix):
     '''

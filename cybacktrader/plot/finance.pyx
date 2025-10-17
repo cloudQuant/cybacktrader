@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from ..utils.py3 import range, zip
 
 import matplotlib.collections as mcol
@@ -15,7 +12,6 @@ import matplotlib.legend as mlegend
 import matplotlib.lines as mlines
 
 from cybacktrader.utils import shade_color
-
 
 class CandlestickPlotHandler(object):
     legend_opens = [0.50, 0.50, 0.50]
@@ -193,7 +189,6 @@ class CandlestickPlotHandler(object):
         # return barcol, tickcol
         return barcol, tickcol
 
-
 def plot_candlestick(ax,
                      x, opens, highs, lows, closes,
                      colorup='k', colordown='r',
@@ -223,7 +218,6 @@ def plot_candlestick(ax,
     # Return the collections. the barcol goes first because
     # is the larger,  has the dominant zorder and defines the legend
     return chandler.barcol, chandler.tickcol
-
 
 class VolumePlotHandler(object):
     legend_vols = [0.5, 1.0, 0.75]
@@ -325,7 +319,6 @@ class VolumePlotHandler(object):
 
         return barcol
 
-
 def plot_volume(
         ax, x, opens, closes, volumes,
         colorup='k', colordown='r',
@@ -343,7 +336,6 @@ def plot_volume(
         **kwargs)
 
     return vhandler.barcol,
-
 
 class OHLCPlotHandler(object):
     legend_opens = [0.50, 0.50, 0.50]
@@ -477,7 +469,6 @@ class OHLCPlotHandler(object):
         # return barcol, tickcol
         return barcol, opencol, closecol
 
-
 def plot_ohlc(ax, x, opens, highs, lows, closes,
               colorup='k', colordown='r',
               width=1.5, tickwidth=0.5,
@@ -494,7 +485,6 @@ def plot_ohlc(ax, x, opens, highs, lows, closes,
         **kwargs)
 
     return handler.barcol, handler.opencol, handler.closecol
-
 
 class LineOnClosePlotHandler(object):
     legend_closes = [0.00, 0.66, 0.33, 1.00]
@@ -562,7 +552,6 @@ class LineOnClosePlotHandler(object):
             **kwargs)
 
         return loc,
-
 
 def plot_lineonclose(ax, x, closes,
                      color='k',

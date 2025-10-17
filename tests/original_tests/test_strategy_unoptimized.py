@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import time
 try:
     time_clock = time.process_time
@@ -34,7 +31,6 @@ SELLEXEC = [
     '3763.95', '3811.85', '3822.35', '3822.57', '3829.82', '3598.58',
     '3545.92', '3766.80', '3782.15', '3979.73', '4045.05'
 ]
-
 
 class RunStrategy(bt.Strategy):
     params = (
@@ -162,9 +158,7 @@ class RunStrategy(bt.Strategy):
             chkprice = '%.2f' % self.data.close[0]
             self.sellcreate.append(chkprice)
 
-
 chkdatas = 1
-
 
 def test_run(main=False):
     for stlike in [False, True]:
@@ -175,7 +169,6 @@ def test_run(main=False):
                            printops=main,
                            stocklike=stlike,
                            plot=main)
-
 
 if __name__ == '__main__':
     test_run(main=True)

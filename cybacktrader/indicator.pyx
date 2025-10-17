@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 # Cython性能优化标记
 # cython: language_level=3
 # cython: boundscheck=False
@@ -82,7 +79,6 @@ class MetaIndicator(IndicatorBase.__class__):
             cls.once = cls.once_via_next
             cls.preonce = cls.preonce_via_prenext
             cls.oncestart = cls.oncestart_via_nextstart
-
 
 # 指标类
 class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):

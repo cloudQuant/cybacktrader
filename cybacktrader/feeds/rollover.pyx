@@ -4,14 +4,9 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from datetime import datetime
 
 import cybacktrader as bt
-
 
 # rollover元类
 class MetaRollOver(bt.DataBase.__class__):
@@ -30,7 +25,6 @@ class MetaRollOver(bt.DataBase.__class__):
             _obj.p.compression = args[0]._compression
 
         return _obj, args, kwargs
-
 
 class RollOver(bt.with_metaclass(MetaRollOver, bt.DataBase)):
     # 当条件满足之后，移动到下一个合约上

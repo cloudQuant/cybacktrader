@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import calendar
 from collections import OrderedDict
 import datetime
@@ -15,7 +12,6 @@ import pprint as pp
 import cybacktrader as bt
 from cybacktrader import TimeFrame
 from cybacktrader.utils.py3 import MAXINT, with_metaclass
-
 
 # analyzer元类
 class MetaAnalyzer(bt.MetaParams):
@@ -322,7 +318,6 @@ class Analyzer(with_metaclass(MetaAnalyzer, object)):
         print Python module (*pprint*)
         """
         pp.pprint(self.get_analysis(), *args, **kwargs)
-
 
 # 周期分析元类
 class MetaTimeFrameAnalyzerBase(Analyzer.__class__):

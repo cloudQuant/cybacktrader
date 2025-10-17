@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import datetime
 
 import cybacktrader as bt
@@ -23,16 +20,12 @@ try:
 except ImportError:
     ib = None
 
-
-
-
 try:
     from ib.ext.Contract import Contract
     from ib.ext.Order import Order
     from ib.opt import ibConnection, message
 except ImportError:
     Contract = Order = ibConnection = message = None
-
 
 class MetaIBData(DataBase.__class__):
     def __init__(cls, name, bases, dct):
@@ -42,7 +35,6 @@ class MetaIBData(DataBase.__class__):
 
         # Register with the store
         ibstore.IBStore.DataCls = cls
-
 
 class IBData(with_metaclass(MetaIBData, DataBase)):
     """Interactive Brokers Data Feed.

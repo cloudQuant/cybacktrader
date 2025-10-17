@@ -7,9 +7,6 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader.indicator import Indicator
 from cybacktrader.functions import Max
 from cybacktrader.indicators.mabase import MovAv
@@ -77,7 +74,6 @@ class PercentagePriceOscillator(_PriceOscBase):
         self.lines.ppo = 100.0 * self.lines[0] / den
         self.l.signal = self.p._movav(self.l.ppo, period=self.p.period_signal)
         self.lines.histo = self.lines.ppo - self.lines.signal
-
 
 class PercentagePriceOscillatorShort(PercentagePriceOscillator):
     '''

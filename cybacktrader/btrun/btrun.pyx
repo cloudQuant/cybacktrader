@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import argparse
 import datetime
 import inspect
@@ -52,7 +49,6 @@ TIMEFRAMES = dict(
     months=bt.TimeFrame.Months,
     years=bt.TimeFrame.Years,
 )
-
 
 def btrun(pargs=''):
     args = parse_args(pargs)
@@ -151,7 +147,6 @@ def btrun(pargs=''):
         # cerebro.plot(numfigs=args.plotfigs, style=args.plotstyle)
         cerebro.plot(**pkwargs)
 
-
 def setbroker(args, cerebro):
     broker = cerebro.getbroker()
 
@@ -183,7 +178,6 @@ def setbroker(args, cerebro):
                                           slip_open=args.slip_open,
                                           slip_match=not args.no_slip_match,
                                           slip_out=args.slip_out)
-
 
 def getdatas(args):
     # Get the data feed class from the global dictionary
@@ -225,7 +219,6 @@ def getdatas(args):
 
     return datas
 
-
 def getmodclasses(mod, clstype, clsname=None):
     clsmembers = inspect.getmembers(mod, inspect.isclass)
 
@@ -243,7 +236,6 @@ def getmodclasses(mod, clstype, clsname=None):
 
     return clslist
 
-
 def getmodfunctions(mod, funcname=None):
     members = inspect.getmembers(mod, inspect.isfunction) + \
               inspect.getmembers(mod, inspect.ismethod)
@@ -258,7 +250,6 @@ def getmodfunctions(mod, funcname=None):
             funclist.append(member)
 
     return funclist
-
 
 def loadmodule(modpath, modname=''):
     # generate a random name for the module
@@ -279,7 +270,6 @@ def loadmodule(modpath, modname=''):
 
     return mod, e
 
-
 def loadmodule2(modpath, modname):
     import imp
 
@@ -289,7 +279,6 @@ def loadmodule2(modpath, modname):
         return None, e
 
     return mod, None
-
 
 def loadmodule3(modpath, modname):
     import importlib.machinery
@@ -301,7 +290,6 @@ def loadmodule3(modpath, modname):
         return None, e
 
     return mod, None
-
 
 def getobjects(iterable, clsbase, modbase, issignal=False):
     retobjects = list()
@@ -354,7 +342,6 @@ def getobjects(iterable, clsbase, modbase, issignal=False):
 
     return retobjects
 
-
 def getfunctions(iterable, modbase):
     retfunctions = list()
 
@@ -395,7 +382,6 @@ def getfunctions(iterable, modbase):
         retfunctions.append((loaded[0], kwargs))
 
     return retfunctions
-
 
 def parse_args(pargs=''):
     parser = argparse.ArgumentParser(
@@ -722,7 +708,6 @@ def parse_args(pargs=''):
         return parser.parse_args(pargs)
 
     return parser.parse_args()
-
 
 if __name__ == '__main__':
     btrun()

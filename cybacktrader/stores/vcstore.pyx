@@ -4,10 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 import collections
 from datetime import date, datetime, time, timedelta
 import os.path
@@ -23,14 +19,12 @@ from cybacktrader.utils.py3 import (MAXINT, range, queue, string_types,
                                   with_metaclass)
 from cybacktrader.utils import AutoDict
 
-
 # 对SymbolInfo对象进行复制，把syminfo的属性及值设置到类实例里面
 
 try:
     import visionchart
 except ImportError:
     visionchart = None
-
 
 class _SymInfo(object):
     # Replica of the SymbolInfo COM object to pass it over thread boundaries
@@ -47,7 +41,6 @@ class _SymInfo(object):
 # 从上面的注释来看，这个类型是用于PumpEvents，如果我们每次都在调用的时候创建一个新的，将会
 # 导致每次都创建新的垃圾，所以在这里定义
 _handles_type = ctypes.c_void_p * 1
-
 
 # todo 这个函数设计了通过COM进行请求，对ctypes了解不多，暂时忽略
 def PumpEvents(timeout=-1, hevt=None, cb=None):
@@ -141,7 +134,6 @@ def PumpEvents(timeout=-1, hevt=None, cb=None):
             # ctypes.windll.kernel32.SetConsoleCtrlHandler(HandlerRoutine, 0)
             # break
 
-
 class RTEventSink(object):
     def __init__(self, store):
         self.store = store
@@ -166,7 +158,6 @@ class RTEventSink(object):
         # p2 should be 0 (disconn), 1 (conn)
         self.store._vcrt_connection(self.store._RT_BASEMSG - p2)
 
-
 class MetaSingleton(MetaParams):
     '''Metaclass to make a metaclassed class a singleton'''
     def __init__(cls, name, bases, dct):
@@ -179,7 +170,6 @@ class MetaSingleton(MetaParams):
                 super(MetaSingleton, cls).__call__(*args, **kwargs))
 
         return cls._singleton
-
 
 class VCStore(with_metaclass(MetaSingleton, object)):
     '''Singleton class wrapping an ibpy ibConnection instance.

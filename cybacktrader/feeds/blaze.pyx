@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 from cybacktrader import date2num
 import backtrader.feed as feed
 
@@ -17,8 +14,6 @@ try:
 except ImportError:
     blaze = None
     odo = None
-
-
 
 # 这个类是backtrader对接Blaze数据的类
 # blaze介绍可以看这个：https://blaze.readthedocs.io/en/latest/index.html

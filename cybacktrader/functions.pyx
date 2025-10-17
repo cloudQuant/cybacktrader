@@ -7,15 +7,11 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import functools
 import math
 
 from cybacktrader.linebuffer import LineActions
 from cybacktrader.utils.py3 import cmp, range
-
 
 # Generate a List equivalent which uses "is" for contains
 # 创建一个新的List类,改写了__contains__方法,如果list中有一个元素的哈希值等于other的哈希值，那么就返回True
@@ -28,7 +24,6 @@ class Logic(LineActions):
     def __init__(self, *args):
         super(Logic, self).__init__()
         self.args = [self.arrayize(arg) for arg in args]
-
 
 # 避免两个line想除的时候有值是0，如果分母是0,除以得到的值是0
 class DivByZero(Logic):
@@ -64,7 +59,6 @@ class DivByZero(Logic):
         for i in range(start, end):
             b = srcb[i]
             dst[i] = srca[i] / b if b != 0.0 else zero_val
-
 
 # 考虑分母分子都可能是0的两个line的想除操作
 class DivZeroByZero(Logic):
@@ -204,7 +198,6 @@ class MultiLogic(Logic):
         for i in range(start, end):
             dst[i] = flogic([arr[i] for arr in arrays])
 
-
 # 主要是调用了functools.partial生成偏函数，functools.reduce,对一个sequence迭代使用function
 class MultiLogicReduce(MultiLogic):
     def __init__(self, *args, **kwargs):
@@ -220,7 +213,6 @@ class Reduce(MultiLogicReduce):
     def __init__(self, flogic, *args, **kwargs):
         self.flogic = flogic
         super(Reduce, self).__init__(*args, **kwargs)
-
 
 # The _xxxlogic functions are defined at module scope to make them
 # pickable and therefore compatible with multiprocessing

@@ -4,10 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 tableau20 = [
     'steelblue',  # 0
     'lightsteelblue',  # 1
@@ -58,7 +54,6 @@ tableau10_light = [
 ]
 
 tab10_index = [3, 0, 2, 1, 2, 4, 5, 6, 7, 8, 9]
-
 
 class PlotScheme(object):
     def __init__(self):

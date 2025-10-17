@@ -4,9 +4,6 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import sys
 
 # 这个类按照字面意思来看，应该是输出的时候刷新，让输出立即显示，但是看这个类的使用，好像并没有起到这个作用

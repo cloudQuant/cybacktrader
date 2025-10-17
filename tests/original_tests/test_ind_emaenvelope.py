@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
 import testcommon
 
 import cybacktrader.indicators as btind
@@ -18,7 +15,6 @@ chkvals = [
 chkmin = 30
 chkind = btind.EMAEnvelope
 
-
 def test_run(main=False):
     datas = [testcommon.getdata(i) for i in range(chkdatas)]
     testcommon.runtest(datas,
@@ -28,7 +24,6 @@ def test_run(main=False):
                        chkind=chkind,
                        chkmin=chkmin,
                        chkvals=chkvals)
-
 
 if __name__ == '__main__':
     test_run(main=True)

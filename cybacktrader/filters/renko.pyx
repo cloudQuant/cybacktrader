@@ -4,15 +4,9 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
-
-
 from cybacktrader import Filter
 
-
 __all__ = ['Renko']
-
 
 class Renko(Filter):
     """Modify the data stream to draw Renko bars (or bricks)
