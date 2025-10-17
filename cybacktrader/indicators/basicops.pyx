@@ -47,6 +47,9 @@ class OperationN(PeriodN):
         self.line[0] = self.func(self.data.get(size=self.p.period))
 
     def once(self, start, end):
+        # Cython深度优化：使用类型声明
+        cdef int i, period
+        
         dst = self.line.array
         src = self.data.array
         period = self.p.period
@@ -202,6 +205,7 @@ class FindFirstIndex(OperationN):
     params = (('_evalfunc', None),)
 
     def func(self, iterable):
+        # 优化：查找满足条件的第一个索引
         m = self.p._evalfunc(iterable)
         return next(i for i, v in enumerate(reversed(iterable)) if v == m)
 
@@ -250,6 +254,7 @@ class FindLastIndex(OperationN):
     params = (('_evalfunc', None),)
 
     def func(self, iterable):
+        # 优化：查找满足条件的最后一个索引
         m = self.p._evalfunc(iterable)
         index = next(i for i, v in enumerate(iterable) if v == m)
         # The iterable goes from 0 -> period - 1. If the last element
@@ -461,6 +466,10 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
             self.line[-1] * self.alpha1[0] + self.data[0] * self.alpha[0]
 
     def once(self, start, end):
+        # Cython深度优化：EMA动态计算
+        cdef int i
+        cdef double prev
+        
         darray = self.data.array
         larray = self.line.array
         alpha = self.alpha.array
@@ -469,7 +478,8 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
         # Seed value from SMA calculated with the call to oncestart
         prev = larray[start - 1]
         for i in range(start, end):
-            larray[i] = prev = prev * alpha1[i] + darray[i] * alpha[i]
+            prev = prev * alpha1[i] + darray[i] * alpha[i]
+            larray[i] = prev
 
 # 加权移动平均值
 class WeightedAverage(PeriodN):
@@ -500,6 +510,10 @@ class WeightedAverage(PeriodN):
         self.line[0] = self.p.coef * math.fsum(dataweighted)
 
     def once(self, start, end):
+        # Cython深度优化：加权平均计算
+        cdef int i, period
+        cdef double coef
+        
         darray = self.data.array
         larray = self.line.array
         period = self.p.period
