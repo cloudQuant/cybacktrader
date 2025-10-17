@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 """
 
@@ -115,14 +120,16 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
         """
         self._minperiod = minperiod
 
-    # 更新最小周期，最小周期可能在其他地方已经计算产生，跟现有的最小周期对比，选择一个最大的作为最小周期
+    # 更新最小周期，最小周期可能在其他地方已经计算产生，跟现有的最小周期对比，选择一个最大的作为最小周期 - Cython优化
     def updateminperiod(self, minperiod):
         """
         Update the minperiod if needed. The minperiod will have been
         calculated elsewhere
         and has to take over if greater that self's
         """
-        self._minperiod = max(self._minperiod, minperiod)
+        cdef int current_min = self._minperiod
+        cdef int new_min = minperiod
+        self._minperiod = max(current_min, new_min)
 
     # 添加最小周期
     def addminperiod(self, minperiod):
@@ -351,32 +358,36 @@ class LineMultiple(LineRoot):
         self._stage1()
         self.lines.reset()
 
-    # 对每一条line设置为操作状态1
+    # 对每一条line设置为操作状态1 - Cython优化
     def _stage1(self):
         super(LineMultiple, self)._stage1()
+        cdef object line
         for line in self.lines:
             line._stage1()
 
-    # 对每一条line设置为操作状态2
+    # 对每一条line设置为操作状态2 - Cython优化
     def _stage2(self):
         super(LineMultiple, self)._stage2()
+        cdef object line
         for line in self.lines:
             line._stage2()
-    # # 对每一条line增加一个最小周期
+    # # 对每一条line增加一个最小周期 - Cython优化
     def addminperiod(self, minperiod):
         """
         The passed minperiod is fed to the lines
         """
         # pass it down to the lines
+        cdef object line
         for line in self.lines:
             line.addminperiod(minperiod)
 
-    # 对每一条line增加最小周期，但是这个在LineRoot里面好没有实施
+    # 对每一条line增加最小周期，但是这个在LineRoot里面好没有实施 - Cython优化
     def incminperiod(self, minperiod):
         """
         The passed minperiod is fed to the lines
         """
         # pass it down to the lines
+        cdef object line
         for line in self.lines:
             line.incminperiod(minperiod)
 
@@ -388,13 +399,15 @@ class LineMultiple(LineRoot):
     def _makeoperationown(self, operation, _ownerskip=None):
         return self.lines[0]._makeoperationown(operation, _ownerskip)
 
-    # 对多条line设置qbuffer
+    # 对多条line设置qbuffer - Cython优化
     def qbuffer(self, savemem=0):
+        cdef object line
         for line in self.lines:
             line.qbuffer(savemem=1)
 
-    # 对多条line设置最小的缓存量
+    # 对多条line设置最小的缓存量 - Cython优化
     def minbuffer(self, size):
+        cdef object line
         for line in self.lines:
             line.minbuffer(size)
 
@@ -404,16 +417,18 @@ class LineSingle(LineRoot):
     LineSingle-->LineRoot-->MetaLineRoot-->MetaParams-->MetaBase-->type
     # 这个类继承自LineRoot，用于操作line是一条的类
     """
-    # 增加minperiod，增加的时候需要减去初始化设置的时候self._minperiod=1的设置
+    # 增加minperiod，增加的时候需要减去初始化设置的时候self._minperiod=1的设置 - Cython优化
     def addminperiod(self, minperiod):
         """
         Add the minperiod (substracting the overlapping 1 minimum period)
         """
-        self._minperiod += minperiod - 1
-    # 增加minperiod,不考虑初始的self._minperiod的值
+        cdef int mp = minperiod
+        self._minperiod += mp - 1
+    # 增加minperiod,不考虑初始的self._minperiod的值 - Cython优化
     def incminperiod(self, minperiod):
         """
         Increment the minperiod with no considerations
         """
-        self._minperiod += minperiod
+        cdef int mp = minperiod
+        self._minperiod += mp
 
