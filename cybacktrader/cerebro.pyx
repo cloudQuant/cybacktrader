@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import datetime
 import collections
@@ -31,6 +36,7 @@ from cybacktrader.timer import Timer
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 class OptReturn(object):
     def __init__(self, params, **kwargs):
+        cdef object k, v
         self.p = self.params = params
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -385,10 +391,11 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # fund历史默认是None
         self._fhistory = None
 
-    # 这个函数会把可迭代对象中的每个元素变成都是可迭代的
+    # 这个函数会把可迭代对象中的每个元素变成都是可迭代的 - Cython优化
     @staticmethod
     def iterize(iterable):
         # Handy function which turns things into things that can be iterated upon including iterables
+        cdef object elem
         niterable = list()
         for elem in iterable:
             if isinstance(elem, string_types):
@@ -778,8 +785,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         """
         pass
 
-    # 对store中的信息进行通知，并传递到每个运行的策略中
+    # 对store中的信息进行通知，并传递到每个运行的策略中 - Cython优化
     def _storenotify(self):
+        cdef object store, notif, msg, args, kwargs, strat
         for store in self.stores:
             for notif in store.get_notifications():
                 msg, args, kwargs = notif
@@ -804,8 +812,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
         """
         self.datacbs.append(callback)
 
-    # 数据信息通知
+    # 数据信息通知 - Cython优化
     def _datanotify(self):
+        cdef object data, notif, status, args, kwargs, strat
         for data in self.datas:
             for notif in data.get_notifications():
                 status, args, kwargs = notif
@@ -813,8 +822,9 @@ class Cerebro(with_metaclass(MetaParams, object)):
                 for strat in self.runningstrats:
                     strat.notify_data(data, status, *args, **kwargs)
 
-    # 通知数据信息
+    # 通知数据信息 - Cython优化
     def _notify_data(self, data, status, *args, **kwargs):
+        cdef object callback
         for callback in self.datacbs:
             callback(data, status, *args, **kwargs)
 
