@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import collections
 import operator
@@ -183,33 +188,37 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         # last check in case not all lineiterators were assigned to
         # lines (directly or indirectly after some operations)
         # An example is Kaufman's Adaptive Moving Average
-        # 指标
-        indicators = self._lineiterators[LineIterator.IndType]
+        # 指标 - Cython优化：使用局部变量缓存
+        cdef object indicators = self._lineiterators[LineIterator.IndType]
         # 指标的周期
         indperiods = [ind._minperiod for ind in indicators]
         # 指标需要满足的最小周期(这个是各个指标的最小周期都能满足)
-        indminperiod = max(indperiods or [self._minperiod])
+        cdef int indminperiod = max(indperiods or [self._minperiod])
         # 更新指标的最小周期
         self.updateminperiod(indminperiod)
 
     def _stage2(self):
-        # 设置_stage2状态
+        # 设置_stage2状态 - Cython优化
         super(LineIterator, self)._stage2()
 
+        cdef object data
         for data in self.datas:
             data._stage2()
 
+        cdef object lineiterators, lineiterator
         for lineiterators in self._lineiterators.values():
             for lineiterator in lineiterators:
                 lineiterator._stage2()
 
     def _stage1(self):
-        # 设置_stage1状态
+        # 设置_stage1状态 - Cython优化
         super(LineIterator, self)._stage1()
 
+        cdef object data
         for data in self.datas:
             data._stage1()
 
+        cdef object lineiterators, lineiterator
         for lineiterators in self._lineiterators.values():
             for lineiterator in lineiterators:
                 lineiterator._stage1()
@@ -283,9 +292,12 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     bind2line = bind2lines
 
     def _next(self):
-        # _next方法
+        # _next方法 - Cython深度优化
         # 当前时间数据的长度
-        clock_len = self._clk_update()
+        cdef int clock_len = self._clk_update()
+        cdef int minperstatus
+        cdef object indicator
+        
         # indicator调用_next
         for indicator in self._lineiterators[LineIterator.IndType]:
             indicator._next()
@@ -316,15 +328,16 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                 self.prenext()
 
     def _clk_update(self):
-        # 更新当前的时间的line，并返回长度
-        clock_len = len(self._clock)
+        # 更新当前的时间的line，并返回长度 - Cython优化
+        cdef int clock_len = len(self._clock)
         if clock_len != len(self):
             self.forward()
 
         return clock_len
 
     def _once(self):
-        # 调用once的相关操作
+        # 调用once的相关操作 - Cython深度优化
+        cdef object indicator, observer, data, line
         
         self.forward(size=self._clock.buflen())
 
@@ -398,7 +411,9 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         pass
 
     def qbuffer(self, savemem=0):
-        # 缓存相关操作
+        # 缓存相关操作 - Cython优化
+        cdef object line, obj, data
+        
         if savemem:
             for line in self.lines:
                 line.qbuffer()
@@ -448,7 +463,9 @@ class SingleCoupler(LineActions):
         self.val = float('NaN')
 
     def next(self):
-        if len(self.cdata) > self.dlen:
+        # Cython优化
+        cdef int cdata_len = len(self.cdata)
+        if cdata_len > self.dlen:
             self.val = self.cdata[0]
             self.dlen += 1
 
@@ -465,7 +482,11 @@ class MultiCoupler(LineIterator):
         self.dvals = [float('NaN')] * self.dsize
 
     def next(self):
-        if len(self.data) > self.dlen:
+        # Cython深度优化
+        cdef int data_len = len(self.data)
+        cdef int i
+        
+        if data_len > self.dlen:
             self.dlen += 1
 
             for i in range(self.dsize):
