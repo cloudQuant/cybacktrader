@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -50,15 +53,17 @@ class DivByZero(Logic):
         self[0] = self.a[0] / b if b else self.zero
 
     def once(self, start, end):
-        # cache python dictionary lookups
+        # Cython深度优化：除法保护
+        cdef int i
+        cdef double b, zero_val = self.zero
+        
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
-        zero = self.zero
 
         for i in range(start, end):
             b = srcb[i]
-            dst[i] = srca[i] / b if b else zero
+            dst[i] = srca[i] / b if b != 0.0 else zero_val
 
 
 # 考虑分母分子都可能是0的两个line的想除操作

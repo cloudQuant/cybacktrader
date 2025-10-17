@@ -3,6 +3,9 @@
 
 # Cython性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -29,14 +32,19 @@ class NonZeroDifference(Indicator):
         self.l.nzd[0] = self.data0[0] - self.data1[0]  # seed value
 
     def next(self):
+        cdef double d
         d = self.data0[0] - self.data1[0]
         self.l.nzd[0] = d if d else self.l.nzd[-1]
 
     def oncestart(self, start, end):
-        self.line.array[start] = (
-            self.data0.array[start] - self.data1.array[start])
+        cdef double d0, d1
+        d0 = self.data0.array[start]
+        d1 = self.data1.array[start]
+        self.line.array[start] = d0 - d1
 
     def once(self, start, end):
+        cdef int i
+        cdef double prev, d
         d0array = self.data0.array
         d1array = self.data1.array
         larray = self.line.array

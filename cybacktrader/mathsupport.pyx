@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import math
+from libc.math cimport sqrt, pow as c_pow
 
 # 看了一下，这几个函数主要用于计算一些指标使用，在主体中没有用到，注释一下，稍后回来看是否需要用cython改进，暂时没有改进的必要。
 # 但是这几个函数其实可以考虑使用numpy改进一下，numpy提供了具体的函数用于计算均值，计算标准差
