@@ -6,6 +6,8 @@
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
+# cython: initializedcheck=False
+# cython: infer_types=True
 
 import math
 from libc.math cimport sqrt, pow as c_pow
@@ -27,8 +29,7 @@ def average(x, bessel=False):
     """
     return math.fsum(x) / (len(x) - bessel)
 
-# 用于计算方差，很明显，这种函数直接改成cython或者numpy，会有很大的效率提升。但是这函数属于边缘函数，暂时忽略改进。
-# 这个函数先判断了avgx是否是None,如果是None然后计算一个可迭代对象的平均值，然后计算方差。
+# 用于计算方差 - Cython优化
 def variance(x, avgx=None):
     """
     Args:
@@ -37,9 +38,13 @@ def variance(x, avgx=None):
     Returns:
       A list with the variance for each element of x
     """
+    cdef double avg
+    cdef double y
     if avgx is None:
-        avgx = average(x)
-    return [pow(y - avgx, 2.0) for y in x]
+        avg = average(x)
+    else:
+        avg = avgx
+    return [c_pow(y - avg, 2.0) for y in x]
 
 # 这个函数用于计算一个可迭代对象x的标准差。
 def standarddev(x, avgx=None, bessel=False):
