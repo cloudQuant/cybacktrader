@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 import itertools
 import sys
@@ -87,7 +90,9 @@ else:
     zip = zip
     long = int
     # 需要注意，这个cmp是自定义的函数，返回值是1,0,-1
-    def cmp(a, b): return (a > b) - (a < b)
+    # Cython优化：对比函数
+    def cmp(a, b): 
+        return (a > b) - (a < b)
 
     def bytes(x): return x.encode('utf-8')
 
