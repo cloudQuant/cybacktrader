@@ -27,6 +27,7 @@ import collections
 import datetime
 from itertools import islice
 import math
+import operator
 
 from cybacktrader.utils.py3 import with_metaclass, string_types
 
@@ -906,11 +907,38 @@ class LinesOperation(LineActions):
         # cache python dictionary lookups
         # a和b都是line的情况下的操作
         cdef int i  # Cython类型声明
+        cdef int s = start, e = end
+        op = self.operation
+        # Specialized fast paths for common arithmetic ops
+        cdef double[:] dstv
+        cdef double[:] av
+        cdef double[:] bv
+        cdef int kind = 0  # 1:add, 2:sub, 3:mul
+        if op is operator.add:
+            kind = 1
+        elif op is operator.sub:
+            kind = 2
+        elif op is operator.mul:
+            kind = 3
+        if kind:
+            dstv = self.array
+            av = self.a.array
+            bv = self.b.array
+            with nogil:
+                if kind == 1:
+                    for i in range(s, e):
+                        dstv[i] = av[i] + bv[i]
+                elif kind == 2:
+                    for i in range(s, e):
+                        dstv[i] = av[i] - bv[i]
+                else:
+                    for i in range(s, e):
+                        dstv[i] = av[i] * bv[i]
+            return
+
         dst = self.array
         srca = self.a.array
         srcb = self.b.array
-        op = self.operation
-
         for i in range(start, end):
             dst[i] = op(srca[i], srcb[i])
 
@@ -931,11 +959,38 @@ class LinesOperation(LineActions):
         # cache python dictionary lookups
         # a是line，b是浮点数的情况下的操作，这里默认了b只能是浮点数，不能是时间
         cdef int i  # Cython类型声明
-        dst = self.array
-        srca = self.a.array
+        cdef int s = start, e = end
         srcb = self.b
         op = self.operation
 
+        cdef double[:] dstv
+        cdef double[:] av
+        cdef double bval
+        cdef int kind = 0
+        if op is operator.add:
+            kind = 1
+        elif op is operator.sub:
+            kind = 2
+        elif op is operator.mul:
+            kind = 3
+        if kind:
+            dstv = self.array
+            av = self.a.array
+            bval = <double>srcb
+            with nogil:
+                if kind == 1:
+                    for i in range(s, e):
+                        dstv[i] = av[i] + bval
+                elif kind == 2:
+                    for i in range(s, e):
+                        dstv[i] = av[i] - bval
+                else:
+                    for i in range(s, e):
+                        dstv[i] = av[i] * bval
+            return
+
+        dst = self.array
+        srca = self.a.array
         for i in range(start, end):
             dst[i] = op(srca[i], srcb)
 
@@ -943,11 +998,38 @@ class LinesOperation(LineActions):
         # cache python dictionary lookups
         # 这里对a和b进行了互换，b是line，a是float或者时间，但是代码里面默认了a应该是float，逻辑判断的时候要注意。
         cdef int i  # Cython类型声明
-        dst = self.array
+        cdef int s = start, e = end
         srca = self.a
-        srcb = self.b.array
         op = self.operation
 
+        cdef double[:] dstv
+        cdef double[:] bv
+        cdef double aval
+        cdef int kind = 0
+        if op is operator.add:
+            kind = 1
+        elif op is operator.sub:
+            kind = 2
+        elif op is operator.mul:
+            kind = 3
+        if kind:
+            dstv = self.array
+            bv = self.b.array
+            aval = <double>srca
+            with nogil:
+                if kind == 1:
+                    for i in range(s, e):
+                        dstv[i] = aval + bv[i]
+                elif kind == 2:
+                    for i in range(s, e):
+                        dstv[i] = aval - bv[i]
+                else:
+                    for i in range(s, e):
+                        dstv[i] = aval * bv[i]
+            return
+
+        dst = self.array
+        srcb = self.b.array
         for i in range(start, end):
             dst[i] = op(srca, srcb[i])
 

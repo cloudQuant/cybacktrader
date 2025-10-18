@@ -12,6 +12,14 @@ from cybacktrader.indicator import Indicator
 
 __all__ = ['PercentChange', 'PctChange']
 
+# 内联C函数：释放GIL计算百分比变化
+cdef inline void _compute_pctchange(double[:] dst, double[:] cur, double[:] prev, int start, int end, int period) noexcept nogil:
+    cdef int i
+    cdef double denom
+    for i in range(start, end):
+        denom = prev[i - period]
+        dst[i] = (cur[i] / denom - 1.0) if denom != 0.0 else 0.0
+
 # 变动百分比
 class PercentChange(Indicator):
     '''
@@ -38,9 +46,8 @@ class PercentChange(Indicator):
         cdef double[:] dst = self.lines.pctchange.array
         cdef double[:] cur = self.data.array
         cdef double[:] prev = self.data.array  # 复用同一数组，但用偏移访问
-        cdef double denom
+        cdef int s = start
+        cdef int e = end
         period = self.p.period
-
-        for i in range(start, end):
-            denom = prev[i - period]
-            dst[i] = (cur[i] / denom - 1.0) if denom != 0.0 else 0.0
+        with nogil:
+            _compute_pctchange(dst, cur, prev, s, e, period)
