@@ -20,6 +20,10 @@ from cybacktrader.utils.py3 import with_metaclass
 from cybacktrader.lineseries import LineSeries
 from cybacktrader.utils import AutoOrderedDict, OrderedDict, date2num
 
+# Cython imports for C-level optimization
+cimport cython
+from libc.math cimport isnan
+
 class TimeFrame(object):
     # 给TimeFrame这个类增加9个属性，用于区分交易的周期
     (Ticks, MicroSeconds, Seconds, Minutes,
@@ -30,30 +34,52 @@ class TimeFrame(object):
 
     names = Names  # support old naming convention
 
-    # 类方法，获取Timeframe的周期类型
+    # 类方法，获取Timeframe的周期类型 - Cython深度优化
     @classmethod 
     def getname(cls, tframe, compression=None):  # backtrader自带
         # 这里面compression的默认参数设置其实并不合理，如果直接传入了默认参数，在下面对比中会报错
         # 修改默认参数为1 或者增加对compression的判断，个人感觉改为1可能更恰当一些
     # @classmethod
     # def getname(cls, tframe, compression=1):
-        tname = cls.Names[tframe]
-        if compression > 1 or tname == cls.Names[-1]:
-            return tname  # for plural or 'NoTimeFrame' return plain entry
-
-        # return singular if compression is 1
-        # 如果compression是1的话，会返回一个单数的交易周期
-        return cls.Names[tframe][:-1]
+        cdef int tf, comp
+        cdef object tname
+        cdef list names
+        
+        # Fast path with C types
+        try:
+            tf = <int>tframe
+            names = cls.Names
+            tname = names[tf]
+            
+            if compression is not None:
+                comp = <int>compression
+                if comp > 1 or tname == names[-1]:
+                    return tname  # for plural or 'NoTimeFrame' return plain entry
+            
+            # return singular if compression is 1
+            # 如果compression是1的话，会返回一个单数的交易周期
+            return tname[:-1]
+        except (TypeError, IndexError, OverflowError):
+            # Fallback for edge cases
+            tname = cls.Names[tframe]
+            if compression is not None and (compression > 1 or tname == cls.Names[-1]):
+                return tname
+            return cls.Names[tframe][:-1]
 
     # 类方法，获取交易周期名字的值
     @classmethod
     def TFrame(cls, name):
         return getattr(cls, name)
 
-    # 类方法，根据交易周期的值返回交易周期的名字
+    # 类方法，根据交易周期的值返回交易周期的名字 - Cython深度优化
     @classmethod
     def TName(cls, tframe):
-        return cls.Names[tframe]
+        cdef int tf
+        try:
+            tf = <int>tframe
+            return cls.Names[tf]
+        except (TypeError, IndexError, OverflowError):
+            return cls.Names[tframe]
 
 class DataSeries(LineSeries):
     # 设置plotinfo相关的值
@@ -186,17 +212,20 @@ class _Bar(AutoOrderedDict):
         super(_Bar, self).__init__()
         self.bstart(maxdate=maxdate)
 
+    @cython.cdivision(True)
     def bstart(self, maxdate=False):
-        """Initializes a bar to the default not-updated values"""
+        """Initializes a bar to the default not-updated values - Cython深度优化"""
         # 准备开始前，先初始化
         # Order is important: defined in DataSeries/OHLC/OHLCDateTime
+        cdef bint use_maxdate = bool(maxdate)
+        
         self.close = float('NaN')
         self.low = float('inf')
         self.high = float('-inf')
         self.open = float('NaN')
         self.volume = 0.0
         self.openinterest = 0.0
-        self.datetime = self.MAXDATE if maxdate else None
+        self.datetime = self.MAXDATE if use_maxdate else None
 
     def isopen(self):
         # 判断是否已经更新过了
