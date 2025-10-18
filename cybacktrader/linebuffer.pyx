@@ -291,9 +291,13 @@ class LineBuffer(LineSingle):
 
         # 优化：缓存方法引用减少属性查找
         if size > 0:
-            array_append = self.array.append
-            for i in range(size):
-                array_append(value)
+            # Try batch extend to reduce Python loop overhead
+            try:
+                self.array.extend([value] * size)
+            except Exception:
+                array_append = self.array.append
+                for i in range(size):
+                    array_append(value)
 
     # 向后移动一位 - Cython优化
     def backwards(self, size=1, force=False):
@@ -345,9 +349,12 @@ class LineBuffer(LineSingle):
         
         # 优化：缓存方法引用
         if size > 0:
-            array_append = self.array.append
-            for i in range(size):
-                array_append(value)
+            try:
+                self.array.extend([value] * size)
+            except Exception:
+                array_append = self.array.append
+                for i in range(size):
+                    array_append(value)
 
     # 增加另一条LineBuffer
     def addbinding(self, binding):
@@ -391,8 +398,25 @@ class LineBuffer(LineSingle):
         """
         Executes the bindings when running in "once" mode
         """
+        cdef int i
+        cdef int blen = self.buflen()
+        cdef double[:] src
+        cdef double[:] dst
+        cdef object binding
+        # Fast path: memoryviews + nogil, with fallback if unsupported
+        try:
+            src = self.array
+            for binding in self.bindings:
+                dst = binding.array
+                with nogil:
+                    for i in range(blen):
+                        dst[i] = src[i]
+            return
+        except TypeError:
+            pass
+
+        # Fallback: Python slicing
         larray = self.array
-        blen = self.buflen()
         for binding in self.bindings:
             binding.array[0:blen] = larray[0:blen]
 
@@ -792,10 +816,22 @@ class _LineDelay(LineActions):
         # cache python dictionary lookups
         # 调用once的时候，根据a的数据,生成对应的ago前的数据形成的array
         cdef int i  # Cython类型声明
+        cdef int s = start, e = end
+        cdef int ago = self.ago
+        # Fast path: memoryviews + nogil
+        cdef double[:] dstv
+        cdef double[:] srcv
+        try:
+            dstv = self.array
+            srcv = self.a.array
+            with nogil:
+                for i in range(s, e):
+                    dstv[i] = srcv[i + ago]
+            return
+        except TypeError:
+            pass
         dst = self.array
         src = self.a.array
-        ago = self.ago
-
         for i in range(start, end):
             dst[i] = src[i + ago]
 
@@ -824,10 +860,21 @@ class _LineForward(LineActions):
     def once(self, start, end):
         # cache python dictionary lookups
         cdef int i  # Cython类型声明
+        cdef int s = start, e = end
+        cdef int ago = self.ago
+        cdef double[:] dstv
+        cdef double[:] srcv
+        try:
+            dstv = self.array
+            srcv = self.a.array
+            with nogil:
+                for i in range(s, e):
+                    dstv[i - ago] = srcv[i]
+            return
+        except TypeError:
+            pass
         dst = self.array
         src = self.a.array
-        ago = self.ago
-
         for i in range(start, end):
             dst[i - ago] = src[i]
 
