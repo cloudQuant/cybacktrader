@@ -69,6 +69,7 @@ class Chainer(bt.with_metaclass(MetaChainer, bt.DataBase)):
         return bt.utils.date.Localizer(self.p.tz)
     # load数据，这个处理看起挺巧妙的，后续准备对期货数据的换月做一个处理或者数据到期之后就剔除这个数据
     def _load(self):
+        cdef int i
         while self._d is not None:
             if not self._d.next():  # no values from current data source
                 self._d = self._ds.pop(0) if self._ds else None
