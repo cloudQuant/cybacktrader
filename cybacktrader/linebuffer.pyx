@@ -37,9 +37,46 @@ from cybacktrader.utils import num2date, time2num
 
 # Cython imports for C-level optimization
 from libc.math cimport trunc as c_trunc, modf as c_modf, isnan, fabs
-
+from libc.stdlib cimport malloc, free
+from libc.string cimport memcpy, memset
+cimport cython
 
 NAN = float('NaN')
+
+# Internal C-level helper functions for performance
+@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline double _safe_array_get(object arr, int idx) nogil:
+    """Fast array access helper - releases GIL for numeric operations"""
+    with gil:
+        return <double>arr[idx]
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline void _safe_array_set(object arr, int idx, double value) nogil:
+    """Fast array set helper - releases GIL for numeric operations"""
+    with gil:
+        arr[idx] = value
+
+@cython.boundscheck(False)
+@cython.wraparound(False)  
+cdef inline void _batch_copy_array(object dst, object src, int start, int end):
+    """Optimized batch array copy"""
+    cdef int i
+    cdef double[:] dstv
+    cdef double[:] srcv
+    try:
+        dstv = dst
+        srcv = src
+        with nogil:
+            for i in range(start, end):
+                dstv[i] = srcv[i]
+    except (TypeError, ValueError):
+        # Fallback for non-memoryview compatible arrays
+        for i in range(start, end):
+            dst[i] = src[i]
 
 
 class LineBuffer(LineSingle):
@@ -170,12 +207,19 @@ class LineBuffer(LineSingle):
         """
         return len(self.array) - self.extension
 
-    # 获取值 - Cython优化：内联关键访问方法
+    # 获取值 - Cython深度优化：内联关键访问方法
     def __getitem__(self, ago):
-        cdef int index = self.idx + ago  # 类型声明优化索引计算
-        return self.array[index]
+        cdef int index
+        cdef int ago_int
+        try:
+            ago_int = <int>ago
+            index = self.idx + ago_int
+            return self.array[index]
+        except (TypeError, OverflowError):
+            # Fallback for non-integer ago (slice objects, etc.)
+            return self.array[self.idx + ago]
 
-    # 获取数据的值，在策略中使用还是比较广泛的 - Cython优化
+    # 获取数据的值，在策略中使用还是比较广泛的 - Cython深度优化
     def get(self, ago=0, size=1):
         """ Returns a slice of the array relative to *ago*
 
@@ -190,16 +234,30 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         """
-        cdef int start, end  # 类型声明优化切片索引
-        # 是否使用切片，如果使用按照下面的语法
-        if self.useislice:
+        cdef int start, end, ago_int, size_int
+        # Fast path: cast to int for C-level performance
+        try:
+            ago_int = <int>ago
+            size_int = <int>size
+        except (TypeError, OverflowError):
+            # Fallback for edge cases
+            if self.useislice:
+                start = self.idx + ago - size + 1
+                end = self.idx + ago + 1
+                return list(islice(self.array, start, end))
             start = self.idx + ago - size + 1
             end = self.idx + ago + 1
+            return self.array[start:end]
+        
+        # 是否使用切片，如果使用按照下面的语法
+        if self.useislice:
+            start = self.idx + ago_int - size_int + 1
+            end = self.idx + ago_int + 1
             return list(islice(self.array, start, end))
         
-        # 如果不使用切片，直接截取
-        start = self.idx + ago - size + 1
-        end = self.idx + ago + 1
+        # 如果不使用切片，直接截取（使用C类型索引）
+        start = self.idx + ago_int - size_int + 1
+        end = self.idx + ago_int + 1
         return self.array[start:end]
 
     # 返回array真正的0处的变量值
@@ -216,7 +274,7 @@ class LineBuffer(LineSingle):
         """
         return self.array[idx]
 
-    # 返回array从idx开始，size个长度的数据 - Cython优化
+    # 返回array从idx开始，size个长度的数据 - Cython深度优化
     def getzero(self, idx=0, size=1):
         """ Returns a slice of the array relative to the real zero of the buffer
 
@@ -227,15 +285,25 @@ class LineBuffer(LineSingle):
         Returns:
             A slice of the underlying buffer
         """
-        cdef int end  # 类型声明
-        if self.useislice:
+        cdef int end, idx_int, size_int
+        # Fast path with C types
+        try:
+            idx_int = <int>idx
+            size_int = <int>size
+            if self.useislice:
+                end = idx_int + size_int
+                return list(islice(self.array, idx_int, end))
+            end = idx_int + size_int
+            return self.array[idx_int:end]
+        except (TypeError, OverflowError):
+            # Fallback
+            if self.useislice:
+                end = idx + size
+                return list(islice(self.array, idx, end))
             end = idx + size
-            return list(islice(self.array, idx, end))
+            return self.array[idx:end]
 
-        end = idx + size
-        return self.array[idx:end]
-
-    # 给array相关的值 - Cython优化：优化设置操作
+    # 给array相关的值 - Cython深度优化：优化设置操作
     def __setitem__(self, ago, value):
         """ Sets a value at position "ago" and executes any associated bindings
 
@@ -244,14 +312,29 @@ class LineBuffer(LineSingle):
             the slice
             value (variable): value to be set
         """
-        cdef int index = self.idx + ago  # 类型声明优化索引计算
-        cdef int i  # 循环变量类型声明
-        self.array[index] = value
-        # 优化bindings循环
-        for i in range(len(self.bindings)):
-            self.bindings[i][ago] = value
+        cdef int index, ago_int
+        cdef int i, n_bindings
+        cdef object binding
+        
+        try:
+            ago_int = <int>ago
+            index = self.idx + ago_int
+            self.array[index] = value
             
-    # 给array设置具体的值 - Cython优化
+            # Optimized bindings loop with cached length
+            n_bindings = len(self.bindings)
+            if n_bindings > 0:
+                for i in range(n_bindings):
+                    binding = self.bindings[i]
+                    binding[ago_int] = value
+        except (TypeError, OverflowError):
+            # Fallback for non-integer ago
+            index = self.idx + ago
+            self.array[index] = value
+            for binding in self.bindings:
+                binding[ago] = value
+            
+    # 给array设置具体的值 - Cython深度优化
     def set(self, value, ago=0):
         """ Sets a value at position "ago" and executes any associated bindings
 
@@ -260,12 +343,27 @@ class LineBuffer(LineSingle):
             ago (int): Point of the array to which size will be added to return
             the slice
         """
-        cdef int index = self.idx + ago  # 类型声明优化索引计算
-        cdef int i  # 循环变量类型声明
-        self.array[index] = value
-        # 优化bindings循环
-        for i in range(len(self.bindings)):
-            self.bindings[i][ago] = value
+        cdef int index, ago_int
+        cdef int i, n_bindings
+        cdef object binding
+        
+        try:
+            ago_int = <int>ago
+            index = self.idx + ago_int
+            self.array[index] = value
+            
+            # Optimized bindings loop with cached length
+            n_bindings = len(self.bindings)
+            if n_bindings > 0:
+                for i in range(n_bindings):
+                    binding = self.bindings[i]
+                    binding[ago_int] = value
+        except (TypeError, OverflowError):
+            # Fallback for non-integer ago
+            index = self.idx + ago
+            self.array[index] = value
+            for binding in self.bindings:
+                binding[ago] = value
 
     # 返回到最开始
     def home(self):
@@ -277,7 +375,7 @@ class LineBuffer(LineSingle):
         self.idx = -1
         self.lencount = 0
 
-    # 向前移动一位 - Cython优化
+    # 向前移动一位 - Cython深度优化
     def forward(self, value=NAN, size=1):
         """ Moves the logical index foward and enlarges the buffer as much as needed
 
@@ -285,21 +383,29 @@ class LineBuffer(LineSingle):
             value (variable): value to be set in new positions
             size (int): How many extra positions to enlarge the buffer
         """
-        cdef int i
-        self.idx += size
-        self.lencount += size
+        cdef int i, size_int
+        cdef object array_append
+        
+        try:
+            size_int = <int>size
+        except (TypeError, OverflowError):
+            size_int = size
+            
+        self.idx += size_int
+        self.lencount += size_int
 
-        # 优化：缓存方法引用减少属性查找
-        if size > 0:
-            # Try batch extend to reduce Python loop overhead
+        # Optimized: batch extend to reduce Python loop overhead
+        if size_int > 0:
+            # Try batch extend first (fastest for most array types)
             try:
-                self.array.extend([value] * size)
-            except Exception:
+                self.array.extend([value] * size_int)
+            except (AttributeError, Exception):
+                # Fallback: cached method reference to reduce attribute lookups
                 array_append = self.array.append
-                for i in range(size):
+                for i in range(size_int):
                     array_append(value)
 
-    # 向后移动一位 - Cython优化
+    # 向后移动一位 - Cython深度优化
     def backwards(self, size=1, force=False):
         """ Moves the logical index backwards and reduces the buffer as much as needed
 
@@ -307,33 +413,50 @@ class LineBuffer(LineSingle):
             size (int): How many extra positions to rewind and reduce the
             buffer
         """
-        cdef int i
-        # Go directly to property setter to support force
-        self.set_idx(self._idx - size, force=force)
-        self.lencount -= size
+        cdef int i, size_int
+        cdef object array_pop
         
-        # 优化：缓存方法引用
-        if size > 0:
+        try:
+            size_int = <int>size
+        except (TypeError, OverflowError):
+            size_int = size
+            
+        # Go directly to property setter to support force
+        self.set_idx(self._idx - size_int, force=force)
+        self.lencount -= size_int
+        
+        # Optimized: cached method reference to reduce attribute lookups
+        if size_int > 0:
             array_pop = self.array.pop
-            for i in range(size):
+            for i in range(size_int):
                 array_pop()
 
-    # 把idx和lencount减少size
+    # 把idx和lencount减少size - Cython深度优化
     def rewind(self, size=1):
-        self.idx -= size
-        self.lencount -= size
+        cdef int size_int
+        try:
+            size_int = <int>size
+        except (TypeError, OverflowError):
+            size_int = size
+        self.idx -= size_int
+        self.lencount -= size_int
 
-    # 把idx和lencount增加size
+    # 把idx和lencount增加size - Cython深度优化
     def advance(self, size=1):
         """ Advances the logical index without touching the underlying buffer
 
         Keyword Args:
             size (int): How many extra positions to move forward
         """
-        self.idx += size
-        self.lencount += size
+        cdef int size_int
+        try:
+            size_int = <int>size
+        except (TypeError, OverflowError):
+            size_int = size
+        self.idx += size_int
+        self.lencount += size_int
 
-    # 向前扩展 - Cython优化
+    # 向前扩展 - Cython深度优化
     def extend(self, value=NAN, size=0):
         """ Extends the underlying array with positions that the index will not reach
 
@@ -344,16 +467,25 @@ class LineBuffer(LineSingle):
         The purpose is to allow for lookahead operations or to be able to
         set values in the buffer "future"
         """
-        cdef int i
-        self.extension += size
+        cdef int i, size_int
+        cdef object array_append
         
-        # 优化：缓存方法引用
-        if size > 0:
+        try:
+            size_int = <int>size
+        except (TypeError, OverflowError):
+            size_int = size
+            
+        self.extension += size_int
+        
+        # Optimized: batch extend to reduce Python loop overhead
+        if size_int > 0:
+            # Try batch extend first (fastest for most array types)
             try:
-                self.array.extend([value] * size)
-            except Exception:
+                self.array.extend([value] * size_int)
+            except (AttributeError, Exception):
+                # Fallback: cached method reference to reduce attribute lookups
                 array_append = self.array.append
-                for i in range(size):
+                for i in range(size_int):
                     array_append(value)
 
     # 增加另一条LineBuffer
@@ -752,15 +884,22 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
         return obj
 
     def _next(self):
+        # Cython深度优化：减少函数调用和属性查找
+        cdef int clock_len, self_len, minperiod
+        
         clock_len = len(self._clock)    # 获取时钟的长度
+        self_len = len(self)
+        minperiod = self._minperiod
+        
         # 如果时钟大于自身的长度，那么自身就需要往前进一步
-        if clock_len > len(self):
+        if clock_len > self_len:
             self.forward()
+        
         # 如果时钟长度大于最小周期了，就开始运行next
-        if clock_len > self._minperiod:
+        if clock_len > minperiod:
             self.next()
         # 如果时钟长度正好等于最小周期，就调用依次nextstart
-        elif clock_len == self._minperiod:
+        elif clock_len == minperiod:
             # only called for the 1st value
             self.nextstart()
         # 如果时钟长度小于最小周期，就调用prenext
@@ -768,13 +907,19 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
             self.prenext()
 
     def _once(self):
+        # Cython深度优化：减少属性查找，使用局部变量缓存
+        cdef int minperiod, buflen_val
+        
+        minperiod = self._minperiod
+        buflen_val = self._clock.buflen()
+        
         # 调用once的时候进行的操作
-        self.forward(size=self._clock.buflen())                 # 向前移动size位
+        self.forward(size=buflen_val)                           # 向前移动size位
         self.home()                                             # 返回原来，idx和count变为0 
 
-        self.preonce(0, self._minperiod - 1)                    # preconce操作
-        self.oncestart(self._minperiod - 1, self._minperiod)    # oncestart操作
-        self.once(self._minperiod, self.buflen())               # once操作
+        self.preonce(0, minperiod - 1)                          # preconce操作
+        self.oncestart(minperiod - 1, minperiod)                # oncestart操作
+        self.once(minperiod, self.buflen())                     # once操作
 
         self.oncebinding()                                      # oncebindling操作
 
