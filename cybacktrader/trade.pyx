@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记（保守设置）
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 import itertools
 
 from cybacktrader.utils import AutoOrderedDict
 from cybacktrader.utils.date import num2date
-# use builtin range for C-level loop optimization
+
+# Cython imports for C-level optimization
+cimport cython
 
 # 交易历史
 class TradeHistory(AutoOrderedDict):
@@ -49,7 +58,8 @@ class TradeHistory(AutoOrderedDict):
         - ``commission`` (``float``): price of the update
             # 更新的佣金
     """
-    # 初始化
+    # 初始化 - Cython深度优化
+    @cython.cdivision(True)
     def __init__(self,
                  status, dt, barlen, size, price, value, pnl, pnlcomm, tz, event=None):
         """Initializes the object to the current status of the Trade"""
@@ -70,7 +80,9 @@ class TradeHistory(AutoOrderedDict):
         return (self.__class__, (self.status.status, self.status.dt, self.status.barlen, self.status.size,
                                  self.status.price, self.status.value, self.status.pnl, self.status.pnlcomm,
                                  self.status.tz, self.event, ))
-    # 做事件的更新
+    # 做事件的更新 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def doupdate(self, order, size, price, commission):
         """Used to fill the ``update`` part of the history entry"""
         self.event.order = order
@@ -81,6 +93,7 @@ class TradeHistory(AutoOrderedDict):
         # Do not allow updates (avoids typing errors)
         self._close()
 
+    @cython.final
     def datetime(self, tz=None, naive=True):
         """Returns a datetime for the time the update event happened"""
         return num2date(self.status.dt, tz or self.status.tz, naive)
@@ -173,17 +186,25 @@ class Trade(object):
         return '\n'.join(
             (':'.join((x, str(getattr(self, x)))) for x in toprint)
         )
-    # 初始化
+    # 初始化 - Cython深度优化
+    @cython.cdivision(True)
     def __init__(self, data=None, tradeid=0, historyon=False,
                  size=0, price=0.0, value=0.0, commission=0.0):
+        
+        cdef long init_size = size
+        cdef long init_tradeid = tradeid
+        cdef double init_price = price
+        cdef double init_value = value
+        cdef double init_commission = commission
+        cdef bint init_historyon = historyon
 
         self.ref = next(self.refbasis)
         self.data = data
-        self.tradeid = tradeid
-        self.size = size
-        self.price = price
-        self.value = value
-        self.commission = commission
+        self.tradeid = init_tradeid
+        self.size = init_size
+        self.price = init_price
+        self.value = init_value
+        self.commission = init_commission
 
         self.pnl = 0.0
         self.pnlcomm = 0.0
@@ -198,26 +219,33 @@ class Trade(object):
         self.dtclose = 0.0
         self.barlen = 0
 
-        self.historyon = historyon
+        self.historyon = init_historyon
         self.history = list()
 
         self.status = self.Created
-    # 返回交易的绝对大小,todo 感觉这个用法稍微有一些奇怪
+    # 返回交易的绝对大小 - Cython深度优化
+    @cython.final
     def __len__(self):
         """Absolute size of the trade"""
-        return abs(self.size)
-    # 判断交易是否为0,trade的size是0的时候，代表trade是close的，如果不为0，代表trade是开着的
+        cdef long size_val = self.size
+        return abs(size_val)
+    
+    # 判断交易是否为0 - Cython深度优化
+    @cython.final
     def __bool__(self):
         """Trade size is not 0"""
         return self.size != 0
 
     __nonzero__ = __bool__
 
-    # 返回数据的名称
+    # 返回数据的名称 - Cython深度优化
+    @cython.final
     def getdataname(self):
         """Shortcut to retrieve the name of the data this trade references"""
         return self.data._name
-    # 返回开仓时间
+    
+    # 返回开仓时间 - Cython深度优化
+    @cython.final
     def open_datetime(self, tz=None, naive=True):
         """Returns a datetime.datetime object with the datetime in which
         the trade was opened
@@ -225,14 +253,16 @@ class Trade(object):
         # data中存在这个num2date的方法
         return self.data.num2date(self.dtopen, tz=tz, naive=naive)
 
-    # 返回平仓的时间
+    # 返回平仓的时间 - Cython深度优化
+    @cython.final
     def close_datetime(self, tz=None, naive=True):
         """Returns a datetime.datetime object with the datetime in which
         the trade was closed
         """
         return self.data.num2date(self.dtclose, tz=tz, naive=naive)
 
-    # 更新trade的事件
+    # 更新trade的事件 - Cython深度优化
+    @cython.cdivision(True)
     def update(self, order, size, price, value, commission, pnl,
                comminfo):
         """
@@ -269,64 +299,82 @@ class Trade(object):
                          Not used because the trade has an independent pnl
             # 执行部分产生的盈亏，没有是用，因为trade有独立的盈亏
         """
+        # Cython深度优化：使用C类型声明
+        cdef long update_size, oldsize, data_len
+        cdef double update_price, update_comm, calc_pnl, new_price
+        cdef bint just_opened, is_open, is_closed
+        
+        update_size = size
+        update_price = price
+        update_comm = commission
+        
         # 如果更新的size是0的话，直接返回
-        if not size:
+        if not update_size:
             return  # empty update, skip all other calculations
 
-        # Commission can only increase
+        # Commission can only increase - 优化：使用C算术
         # 佣金不断增加
-        self.commission += commission
+        self.commission += update_comm
 
         # Update size and keep a reference for logic calculations
         # 更新trade的大小
         oldsize = self.size
-        self.size += size  # size will carry the opposite sign if reducing
+        self.size += update_size  # size will carry the opposite sign if reducing
 
         # Check if it has been currently opened
         # 如果原先仓位是0,但是当前仓位不是0,这代表仓位刚开
-        self.justopened = bool(not oldsize and size)
+        just_opened = (oldsize == 0) and (update_size != 0)
+        self.justopened = just_opened
+        
         # 如果是仓位刚开，那么就更新baropen,dtopen和long
-        if self.justopened:
-            self.baropen = len(self.data)
+        if just_opened:
+            data_len = len(self.data)
+            self.baropen = data_len
             self.dtopen = 0.0 if order.p.simulated else self.data.datetime[0]
             self.long = self.size > 0
 
         # Any size means the trade was opened
         # 判断当前trade是否是open的
-        self.isopen = bool(self.size)
+        is_open = (self.size != 0)
+        self.isopen = is_open
 
-        # Update current trade length
+        # Update current trade length - 优化：缓存len调用
         # 更新当前trade的持仓bar数目
-        self.barlen = len(self.data) - self.baropen
+        data_len = len(self.data)
+        self.barlen = data_len - self.baropen
 
         # record if the position was closed (set to null)
         # 如果原先仓位不为0,但是当前仓位是0,代表trade已经平仓
-        self.isclosed = bool(oldsize and not self.size)
+        is_closed = (oldsize != 0) and (self.size == 0)
+        self.isclosed = is_closed
 
         # record last bar for the trade
         # 如果已经平仓，更新isopen,barclose,dtclose,status属性
-        if self.isclosed:
+        if is_closed:
             self.isopen = False
-            self.barclose = len(self.data)
+            self.barclose = data_len
             self.dtclose = self.data.datetime[0]
 
             self.status = self.Closed
         # 如果当前是开仓，更新status
-        elif self.isopen:
+        elif is_open:
             self.status = self.Open
-        # 如果是加仓
+        
+        # 如果是加仓 - 优化：使用C算术
         if abs(self.size) > abs(oldsize):
             # position increased (be it positive or negative)
             # update the average price
-            self.price = (oldsize * self.price + size * price) / self.size
-            pnl = 0.0
+            new_price = (oldsize * self.price + update_size * update_price) / self.size
+            self.price = new_price
+            calc_pnl = 0.0
         # 如果是平仓一部分
         else:  # abs(self.size) < abs(oldsize)
             # position reduced/closed
             # 计算盈亏
-            pnl = comminfo.profitandloss(-size, self.price, price)
+            calc_pnl = comminfo.profitandloss(-update_size, self.price, update_price)
+        
         # trade的盈亏
-        self.pnl += pnl
+        self.pnl += calc_pnl
         # trade的净盈亏
         self.pnlcomm = self.pnl - self.commission
         # 更新trade的value
@@ -340,5 +388,5 @@ class Trade(object):
                 self.status, dt0, self.barlen,
                 self.size, self.price, self.value,
                 self.pnl, self.pnlcomm, self.data._tz)
-            histentry.doupdate(order, size, price, commission)
+            histentry.doupdate(order, update_size, update_price, update_comm)
             self.history.append(histentry)
