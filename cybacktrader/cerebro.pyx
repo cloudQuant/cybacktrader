@@ -24,6 +24,9 @@ import cybacktrader as bt
 from cybacktrader.utils.py3 import (map, range, zip, with_metaclass, string_types,
                         integer_types)
 
+# Cython imports for C-level optimization
+cimport cython
+
 from cybacktrader import linebuffer
 from cybacktrader import indicator
 from cybacktrader.brokers import BackBroker
@@ -1678,12 +1681,18 @@ class Cerebro(with_metaclass(MetaParams, object)):
         """API for lineiterators to disable runonce (see HeikinAshi)"""
         self._dorunonce = False
 
-    # runnext方法
+    # runnext方法 - Cython深度优化
     def _runnext(self, runstrats):
         """
         Actual implementation of run in full next mode. All objects have its
         ``next`` method invoke on each data arrival
         """
+        # Cython深度优化：使用局部变量缓存，减少属性访问
+        cdef int i, ldatas, ldatas_noclones, clonecount, livecount
+        cdef bint onlyresample, noresample, newqcheck, lastret
+        cdef object data0, datas, datas1, dt0, d0ret_val
+        cdef list rsonly, drets, dts
+        
         # 对数据的时间周期进行排序
         datas = sorted(self.datas,
                        key=lambda x: (x._timeframe, x._compression))
@@ -1691,22 +1700,23 @@ class Cerebro(with_metaclass(MetaParams, object)):
         datas1 = datas[1:]
         # 主数据
         data0 = datas[0]
-        d0ret = True
-        # todo rs 和 rp 并没有使用到，进行注释掉
-        # resample的index
-        # rs = [i for i, x in enumerate(datas) if x.resampling]
-        # replaying的index
-        # rp = [i for i, x in enumerate(datas) if x.replaying]
-        # 仅仅只做resample,不做replay得index
-        rsonly = [i for i, x in enumerate(datas) if x.resampling and not x.replaying]
+        d0ret_val = True
+        
+        # 优化：使用C级别的循环和计数
+        ldatas = len(datas)
+        rsonly = []
+        clonecount = 0
+        
+        for i in range(ldatas):
+            if datas[i]._clone:
+                clonecount += 1
+            if datas[i].resampling and not datas[i].replaying:
+                rsonly.append(i)
+        
         # 判断是否仅仅做resample
-        onlyresample = len(datas) == len(rsonly)
+        onlyresample = ldatas == len(rsonly)
         # 判断是否没有需要resample的数据
         noresample = not rsonly
-        # 克隆的数据量
-        clonecount = sum(d._clone for d in datas)
-        # 数据的数量
-        ldatas = len(datas)
         # 没有克隆的数据量
         ldatas_noclones = ldatas - clonecount
         # todo lastqcheck 没有使用到，注释掉
@@ -1714,16 +1724,23 @@ class Cerebro(with_metaclass(MetaParams, object)):
         # 默认dt0在最大时间
         dt0 = date2num(datetime.datetime.max) - 2  # default at max
         # while循环
-        while d0ret or d0ret is None:
+        while d0ret_val or d0ret_val is None:
             # if any has live data in the buffer, no data will wait anything
-            # 如果有任何实时数据的话，newqcheck是False
-            newqcheck = not any(d.haslivedata() for d in datas)
+            # 如果有任何实时数据的话，newqcheck是False - Cython深度优化
+            newqcheck = True
+            for i in range(ldatas):
+                if datas[i].haslivedata():
+                    newqcheck = False
+                    break
             # 如果存在实时数据
             if not newqcheck:
                 # If no data has reached the live status or all, wait for
                 # the next incoming data
-                # livecount是实时数据的量
-                livecount = sum(d._laststatus == d.LIVE for d in datas)
+                # livecount是实时数据的量 - Cython深度优化
+                livecount = 0
+                for i in range(ldatas):
+                    if datas[i]._laststatus == datas[i].LIVE:
+                        livecount += 1
                 # todo 这个判断没有任何意义
                 newqcheck = not livecount or livecount == ldatas_noclones
 
@@ -1758,12 +1775,19 @@ class Cerebro(with_metaclass(MetaParams, object)):
                     qlapse = datetime.datetime.utcnow() - qstart
                 d.do_qcheck(newqcheck, qlapse.total_seconds())
                 drets.append(d.next(ticks=False))
-            # 遍历drets,如果d0ret是False,并且存在dret是None的话，d0ret是None
-            d0ret = any((dret for dret in drets))
-            if not d0ret and any((dret is None for dret in drets)):
-                d0ret = None
+            # 遍历drets,如果d0ret是False,并且存在dret是None的话，d0ret是None - Cython深度优化
+            d0ret_val = False
+            for i in range(len(drets)):
+                if drets[i]:
+                    d0ret_val = True
+                    break
+            if not d0ret_val:
+                for i in range(len(drets)):
+                    if drets[i] is None:
+                        d0ret_val = None
+                        break
             # 如果d0ret不是None的话
-            if d0ret:
+            if d0ret_val:
                 # 获取时间
                 dts = []
                 for i, ret in enumerate(drets):
@@ -1821,7 +1845,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
 
                         # self._plotfillers2[i].append(slen)  # mark as fill
             # 如果d0ret是None的话，遍历每个数据，调用_check()
-            elif d0ret is None:
+            elif d0ret_val is None:
                 # meant for things like live feeds which may not produce a bar
                 # at the moment but need the loop to run for notifications and
                 # getting resample and others to produce timely bars
@@ -1843,7 +1867,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
             # 检查timer和遍历策略并调用_next_open()进行运行
-            if d0ret or lastret:  # if any bar, check timers before broker
+            if d0ret_val or lastret:  # if any bar, check timers before broker
                 self._check_timers(runstrats, dt0, cheat=True)
                 if self.p.cheat_on_open:
                     for strat in runstrats:
@@ -1855,7 +1879,7 @@ class Cerebro(with_metaclass(MetaParams, object)):
             if self._event_stop:  # stop if requested
                 return
             # 通知timer,并且遍历策略并运行
-            if d0ret or lastret:  # bars produced by data or filters
+            if d0ret_val or lastret:  # bars produced by data or filters
                 self._check_timers(runstrats, dt0, cheat=False)
                 for strat in runstrats:
                     strat._next()
