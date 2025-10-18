@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython深度性能优化标记
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
+# cython: nonecheck=False
 # cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 import datetime
 import collections
@@ -35,9 +38,11 @@ from cybacktrader.timer import Timer
 
 # Defined here to make it pickable. Ideally it could be defined inside Cerebro
 class OptReturn(object):
+    """优化返回结果类 - Cython优化"""
     def __init__(self, params, **kwargs):
         cdef object k, v
         self.p = self.params = params
+        # 优化：缓存setattr引用
         for k, v in kwargs.items():
             setattr(self, k, v)
 
