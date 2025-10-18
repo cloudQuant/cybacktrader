@@ -11,7 +11,7 @@ with appends, forwarding, rewinding, resetting and other
 .moduleauthor:: Daniel Rodriguez
 
 """
-# Cython深度性能优化标记
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
@@ -19,6 +19,8 @@ with appends, forwarding, rewinding, resetting and other
 # cython: nonecheck=False
 # cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 import array
 import collections
@@ -33,7 +35,7 @@ from cybacktrader import metabase
 from cybacktrader.utils import num2date, time2num
 
 # Cython imports for C-level optimization
-from libc.math cimport trunc as c_trunc, modf as c_modf
+from libc.math cimport trunc as c_trunc, modf as c_modf, isnan, fabs
 
 
 NAN = float('NaN')
@@ -274,7 +276,7 @@ class LineBuffer(LineSingle):
         self.idx = -1
         self.lencount = 0
 
-    # 向前移动一位
+    # 向前移动一位 - Cython优化
     def forward(self, value=NAN, size=1):
         """ Moves the logical index foward and enlarges the buffer as much as needed
 
@@ -282,15 +284,17 @@ class LineBuffer(LineSingle):
             value (variable): value to be set in new positions
             size (int): How many extra positions to enlarge the buffer
         """
-        cdef int i  # Cython类型声明
+        cdef int i
         self.idx += size
         self.lencount += size
 
-        # 优化：减少循环中的方法调用
-        for i in range(size):
-            self.array.append(value)
+        # 优化：缓存方法引用减少属性查找
+        if size > 0:
+            array_append = self.array.append
+            for i in range(size):
+                array_append(value)
 
-    # 向后移动一位
+    # 向后移动一位 - Cython优化
     def backwards(self, size=1, force=False):
         """ Moves the logical index backwards and reduces the buffer as much as needed
 
@@ -298,12 +302,16 @@ class LineBuffer(LineSingle):
             size (int): How many extra positions to rewind and reduce the
             buffer
         """
-        cdef int i  # Cython类型声明
+        cdef int i
         # Go directly to property setter to support force
         self.set_idx(self._idx - size, force=force)
         self.lencount -= size
-        for i in range(size):
-            self.array.pop()
+        
+        # 优化：缓存方法引用
+        if size > 0:
+            array_pop = self.array.pop
+            for i in range(size):
+                array_pop()
 
     # 把idx和lencount减少size
     def rewind(self, size=1):
@@ -320,7 +328,7 @@ class LineBuffer(LineSingle):
         self.idx += size
         self.lencount += size
 
-    # 向前扩展
+    # 向前扩展 - Cython优化
     def extend(self, value=NAN, size=0):
         """ Extends the underlying array with positions that the index will not reach
 
@@ -331,10 +339,14 @@ class LineBuffer(LineSingle):
         The purpose is to allow for lookahead operations or to be able to
         set values in the buffer "future"
         """
-        cdef int i  # Cython类型声明
+        cdef int i
         self.extension += size
-        for i in range(size):
-            self.array.append(value)
+        
+        # 优化：缓存方法引用
+        if size > 0:
+            array_append = self.array.append
+            for i in range(size):
+                array_append(value)
 
     # 增加另一条LineBuffer
     def addbinding(self, binding):
