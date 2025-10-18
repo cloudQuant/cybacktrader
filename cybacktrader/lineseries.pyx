@@ -24,7 +24,7 @@ lines at once.
 
 import sys
 
-from cybacktrader.utils.py3 import map, range, string_types, with_metaclass
+from cybacktrader.utils.py3 import map, string_types, with_metaclass
 
 from cybacktrader.linebuffer import LineBuffer, LineActions, LinesOperation, LineDelay, NAN
 from cybacktrader.lineroot import LineRoot, LineSingle, LineMultiple
@@ -305,57 +305,71 @@ class Lines(object):
         """
         Proxy line operation
         """
-        # 把每个line都向前size
-        for line in self.lines:
-            line.forward(value, size=size)
+        # 把每个line都向前size - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].forward(value, size=size)
 
     def backwards(self, size=1, force=False):
         """
         Proxy line operation
         """
-        # 把每个line都向后size
-        for line in self.lines:
-            line.backwards(size, force=force)
+        # 把每个line都向后size - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].backwards(size, force=force)
 
     def rewind(self, size=1):
         """
         Proxy line operation
         """
-        # 把line的idx和lencount减少size
-        for line in self.lines:
-            line.rewind(size)
+        # 把line的idx和lencount减少size - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].rewind(size)
 
     def extend(self, value=NAN, size=0):
         """
         Proxy line operation
         """
-        # 把line.array向前扩展size个值
-        for line in self.lines:
-            line.extend(value, size)
+        # 把line.array向前扩展size个值 - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].extend(value, size)
 
     def reset(self):
         """
         Proxy line operation
         """
-        # 重置line
-        for line in self.lines:
-            line.reset()
+        # 重置line - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].reset()
 
     def home(self):
         """
         Proxy line operation
         """
-        # 返回到最开始
-        for line in self.lines:
-            line.home()
+        # 返回到最开始 - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].home()
 
     def advance(self, size=1):
         """
         Proxy line operation
         """
-        # 把line的idx和lencount增加size
-        for line in self.lines:
-            line.advance(size)
+        # 把line的idx和lencount增加size - 优化为索引循环
+        cdef int i, n = len(self.lines)
+        cdef object lines = self.lines
+        for i in range(n):
+            lines[i].advance(size)
 
     def buflen(self, line=0):
         """
