@@ -15,6 +15,7 @@ import operator
 from ..utils.py3 import map, range
 
 from cybacktrader import Indicator
+import array
 
 # PeriodN这个类给整个系统增加了需要满足的最小的周期
 class PeriodN(Indicator):
@@ -314,30 +315,28 @@ class Accum(Indicator):
         self.line[0] = self.line[-1] + self.data[0]
 
     def oncestart(self, start, end):
-        # Cython深度优化：累积求和
+        # Cython深度优化：累积求和（typed memoryviews）
         cdef int i
         cdef double prev
-        
-        dst = self.line.array
-        src = self.data.array
+        cdef double[:] dst_mv = self.line.array
+        cdef double[:] src_mv = self.data.array
         prev = self.p.seed
 
         for i in range(start, end):
-            prev = prev + src[i]
-            dst[i] = prev
+            prev = prev + src_mv[i]
+            dst_mv[i] = prev
 
     def once(self, start, end):
-        # Cython深度优化：累积求和
+        # Cython深度优化：累积求和（typed memoryviews）
         cdef int i
         cdef double prev
-        
-        dst = self.line.array
-        src = self.data.array
-        prev = dst[start - 1]
+        cdef double[:] dst_mv = self.line.array
+        cdef double[:] src_mv = self.data.array
+        prev = dst_mv[start - 1]
 
         for i in range(start, end):
-            prev = prev + src[i]
-            dst[i] = prev
+            prev = prev + src_mv[i]
+            dst_mv[i] = prev
 
 # 计算平均值
 class Average(PeriodN):
@@ -358,28 +357,28 @@ class Average(PeriodN):
             math.fsum(self.data.get(size=self.p.period)) / self.p.period
 
     def once(self, start, end):
-        # Cython深度优化：使用滚动求和算法
+        # Cython深度优化：使用滚动求和算法（typed memoryviews）
         cdef int i, j
         cdef int period = self.p.period
         cdef double sum_val, old_val, new_val
         cdef double period_inv = 1.0 / period  # 预计算除数
-        
-        src = self.data.array
-        dst = self.line.array
-        
+
+        cdef double[:] src_mv = self.data.array
+        cdef double[:] dst_mv = self.line.array
+
         # 计算第一个值
         if start < end:
             sum_val = 0.0
             for j in range(period):
-                sum_val += src[start - period + 1 + j]
-            dst[start] = sum_val * period_inv
-            
+                sum_val += src_mv[start - period + 1 + j]
+            dst_mv[start] = sum_val * period_inv
+
             # 滚动求和：O(n)而不是O(n*period)
             for i in range(start + 1, end):
-                old_val = src[i - period]
-                new_val = src[i]
+                old_val = src_mv[i - period]
+                new_val = src_mv[i]
                 sum_val = sum_val - old_val + new_val
-                dst[i] = sum_val * period_inv
+                dst_mv[i] = sum_val * period_inv
 
 # 计算指数平均值
 class ExponentialSmoothing(Average):
@@ -419,20 +418,20 @@ class ExponentialSmoothing(Average):
         super(ExponentialSmoothing, self).once(start, end)
 
     def once(self, start, end):
-        # Cython深度优化：EMA计算
+        # Cython深度优化：EMA计算（typed memoryviews）
         cdef int i
         cdef double prev, alpha, alpha1
-        
-        darray = self.data.array
-        larray = self.line.array
+
+        cdef double[:] d_mv = self.data.array
+        cdef double[:] l_mv = self.line.array
         alpha = self.alpha
         alpha1 = self.alpha1
 
         # Seed value from SMA calculated with the call to oncestart
-        prev = larray[start - 1]
+        prev = l_mv[start - 1]
         for i in range(start, end):
-            prev = prev * alpha1 + darray[i] * alpha
-            larray[i] = prev
+            prev = prev * alpha1 + d_mv[i] * alpha
+            l_mv[i] = prev
 
 # 动态指数移动平均值
 class ExponentialSmoothingDynamic(ExponentialSmoothing):
@@ -467,20 +466,20 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
             self.line[-1] * self.alpha1[0] + self.data[0] * self.alpha[0]
 
     def once(self, start, end):
-        # Cython深度优化：EMA动态计算
+        # Cython深度优化：EMA动态计算（typed memoryviews）
         cdef int i
         cdef double prev
-        
-        darray = self.data.array
-        larray = self.line.array
-        alpha = self.alpha.array
-        alpha1 = self.alpha1.array
+
+        cdef double[:] d_mv = self.data.array
+        cdef double[:] l_mv = self.line.array
+        cdef double[:] alpha_mv = self.alpha.array
+        cdef double[:] alpha1_mv = self.alpha1.array
 
         # Seed value from SMA calculated with the call to oncestart
-        prev = larray[start - 1]
+        prev = l_mv[start - 1]
         for i in range(start, end):
-            prev = prev * alpha1[i] + darray[i] * alpha[i]
-            larray[i] = prev
+            prev = prev * alpha1_mv[i] + d_mv[i] * alpha_mv[i]
+            l_mv[i] = prev
 
 # 加权移动平均值
 class WeightedAverage(PeriodN):
@@ -511,16 +510,18 @@ class WeightedAverage(PeriodN):
         self.line[0] = self.p.coef * math.fsum(dataweighted)
 
     def once(self, start, end):
-        # Cython深度优化：加权平均计算
-        cdef int i, period
-        cdef double coef
-        
-        darray = self.data.array
-        larray = self.line.array
+        # Cython深度优化：加权平均计算（typed memoryviews + C循环累加）
+        cdef int i, j, period
+        cdef double coef, sum_val
+
+        cdef double[:] d_mv = self.data.array
+        cdef double[:] l_mv = self.line.array
         period = self.p.period
         coef = self.p.coef
-        weights = self.p.weights
+        weights = self.p.weights  # Python tuple/list，索引读取
 
         for i in range(start, end):
-            data = darray[i - period + 1: i + 1]
-            larray[i] = coef * math.fsum(map(operator.mul, data, weights))
+            sum_val = 0.0
+            for j in range(period):
+                sum_val += d_mv[i - period + 1 + j] * weights[j]
+            l_mv[i] = coef * sum_val
