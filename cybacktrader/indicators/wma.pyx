@@ -12,7 +12,7 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
-from ..utils.py3 import range
+# 使用内建 range 以启用 C 级 for 循环优化
 
 from cybacktrader.indicators.mabase import MovingAverageBase
 from cybacktrader.indicators.basicops import WeightedAverage

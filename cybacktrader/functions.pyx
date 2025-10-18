@@ -197,15 +197,34 @@ class If(Logic):
         self[0] = self.a[0] if self.cond[0] else self.b[0]
 
     def once(self, start, end):
-        # Cython优化：IF条件
-        cdef int i
-        cdef object dst = self.array
-        cdef object srca = self.a.array
-        cdef object srcb = self.b.array
-        cdef object cond = self.cond.array
+        # Cython深度优化 + 兼容性回退：优先使用 typed memoryviews，其次退回 Python 对象路径
+        cdef int i, s = start, e = end
+        cdef double[:] dst_d
+        cdef double[:] srca_d
+        cdef double[:] srcb_d
+        cdef double[:] cond_d
+        try:
+            dst_d = self.array
+            srca_d = self.a.array
+            srcb_d = self.b.array
+            cond_d = self.cond.array
 
+            with nogil:
+                for i in range(s, e):
+                    # 将非零视为 True，零为 False，避免 Python 层 bool
+                    dst_d[i] = srca_d[i] if cond_d[i] != 0.0 else srcb_d[i]
+            return
+        except TypeError:
+            # 某些后端数组为 PseudoArray/对象数组，不支持缓冲区协议
+            pass
+
+        # 回退路径：使用 Python 对象索引，保持与原逻辑一致
+        dst_o = self.array
+        srca_o = self.a.array
+        srcb_o = self.b.array
+        cond_o = self.cond.array
         for i in range(start, end):
-            dst[i] = srca[i] if cond[i] else srcb[i]
+            dst_o[i] = srca_o[i] if cond_o[i] else srcb_o[i]
 
 # 一个逻辑应用到多个元素上
 class MultiLogic(Logic):
