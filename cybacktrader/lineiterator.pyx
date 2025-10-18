@@ -25,11 +25,17 @@ from cybacktrader.lineseries import LineSeries, LineSeriesMaker
 from cybacktrader.dataseries import DataSeries
 from cybacktrader import metabase
 
+# Cython imports for C-level optimization
+cimport cython
+from libc.math cimport isnan, fabs
+
 class MetaLineIterator(LineSeries.__class__):
     # 为LineIterator做一些处理工作
     def donew(cls, *args, **kwargs):
-        cdef int l
-        cdef object data, line, linealias
+        # Cython深度优化：增强类型声明，减少属性查找
+        cdef int l, lastarg, mindatas_int
+        cdef object data, line, linealias, arg
+        
         # 创建类
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).donew(*args, **kwargs)
@@ -43,6 +49,7 @@ class MetaLineIterator(LineSeries.__class__):
         # use the _owner (to have a clock)
         # 获取_obj的_mindatas值
         mindatas = _obj._mindatas
+        mindatas_int = <int>mindatas if isinstance(mindatas, int) else mindatas
         # 最后一个参数0
         lastarg = 0
         # _obj.datas属性设置成一个空列表
@@ -54,7 +61,7 @@ class MetaLineIterator(LineSeries.__class__):
             if isinstance(arg, LineRoot) or hasattr(arg, 'lines'):
                 _obj.datas.append(LineSeriesMaker(arg))
             # 如果mindatas的值是0的话，直接break
-            elif not mindatas:
+            elif not mindatas_int:
                 break  # found not data and must not be collected
             # 如果arg既不是line，mindatas还大于0的话，先对arg进行操作，尝试生成一个伪的array，然后生成一个LineDelay，添加到datas中，如果出现错误，就break
             else:
@@ -64,7 +71,7 @@ class MetaLineIterator(LineSeries.__class__):
                     # Not a LineNum and is not a LineSeries - bail out
                     break
             # mindatas减去1,mindatas保证要大于等于1
-            mindatas = max(0, mindatas - 1)
+            mindatas_int = max(0, mindatas_int - 1)
             # lastarg加1
             lastarg += 1
         # 截取剩下的args
@@ -88,23 +95,28 @@ class MetaLineIterator(LineSeries.__class__):
         # For each found data add access member -
         # for the first data 2 (data and data0)
         # 设置_obj的data属性，如果datas不是空的话，默认取出来的是第一个data
+        # Cython深度优化：使用整数类型遍历
+        cdef int d_idx
         if _obj.datas:
             _obj.data = data = _obj.datas[0]
             # 给data的line设置具体的别名
-            for l, line in enumerate(data.lines):
+            for l in range(len(data.lines)):
+                line = data.lines[l]
                 linealias = data._getlinealias(l)
                 if linealias:
                     setattr(_obj, 'data_%s' % linealias, line)
                 setattr(_obj, 'data_%d' % l, line)
             # 给data、以及data的line设置具体的别名
-            for d, data in enumerate(_obj.datas):
-                setattr(_obj, 'data%d' % d, data)
+            for d_idx in range(len(_obj.datas)):
+                data = _obj.datas[d_idx]
+                setattr(_obj, 'data%d' % d_idx, data)
 
-                for l, line in enumerate(data.lines):
+                for l in range(len(data.lines)):
+                    line = data.lines[l]
                     linealias = data._getlinealias(l)
                     if linealias:
-                        setattr(_obj, 'data%d_%s' % (d, linealias), line)
-                    setattr(_obj, 'data%d_%d' % (d, l), line)
+                        setattr(_obj, 'data%d_%s' % (d_idx, linealias), line)
+                    setattr(_obj, 'data%d_%d' % (d_idx, l), line)
 
         # Parameter values have now been set before __init__
         # 设置dnames的值，如果d设置了_name属性
@@ -115,7 +127,10 @@ class MetaLineIterator(LineSeries.__class__):
         return _obj, newargs, kwargs
 
     def dopreinit(cls, _obj, *args, **kwargs):
-        cdef object line
+        # Cython深度优化：增强类型声明
+        cdef object line, x
+        cdef int minperiod
+        
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
@@ -132,9 +147,14 @@ class MetaLineIterator(LineSeries.__class__):
         # No calculation can take place until all datas have yielded "data"
         # A data could be an indicator, and it could take x bars until
         # something is produced
-        # 获取_obj的最小周期
-        _obj._minperiod = \
-            max([x._minperiod for x in _obj.datas if x is not None] or [_obj._minperiod])
+        # 获取_obj的最小周期 - 优化：使用生成器表达式减少内存分配
+        minperiod = _obj._minperiod
+        for x in _obj.datas:
+            if x is not None:
+                x_period = x._minperiod
+                if x_period > minperiod:
+                    minperiod = x_period
+        _obj._minperiod = minperiod
 
         # The lines carry at least the same minperiod as
         # that provided by the datas
@@ -145,13 +165,21 @@ class MetaLineIterator(LineSeries.__class__):
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
+        # Cython深度优化：使用局部变量减少属性查找
         cdef object line
+        cdef int minperiod, line_minperiod
+        
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).dopostinit(_obj, *args, **kwargs)
 
         # my minperiod is as large as the minperiod of my lines
-        # 获取各条line中最大的一个最小周期
-        _obj._minperiod = max([x._minperiod for x in _obj.lines])
+        # 获取各条line中最大的一个最小周期 - 优化：避免列表推导
+        minperiod = 0
+        for line in _obj.lines:
+            line_minperiod = line._minperiod
+            if line_minperiod > minperiod:
+                minperiod = line_minperiod
+        _obj._minperiod = minperiod
 
         # Recalc the period
         #######
@@ -196,40 +224,47 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         # last check in case not all lineiterators were assigned to
         # lines (directly or indirectly after some operations)
         # An example is Kaufman's Adaptive Moving Average
-        # 指标 - Cython优化：使用局部变量缓存
+        # Cython深度优化：使用局部变量缓存，避免列表推导
         cdef object indicators = self._lineiterators[LineIterator.IndType]
-        # 指标的周期
-        indperiods = [ind._minperiod for ind in indicators]
+        cdef int indminperiod, ind_period
+        cdef object ind
+        
         # 指标需要满足的最小周期(这个是各个指标的最小周期都能满足)
-        cdef int indminperiod = max(indperiods or [self._minperiod])
+        indminperiod = self._minperiod
+        for ind in indicators:
+            ind_period = ind._minperiod
+            if ind_period > indminperiod:
+                indminperiod = ind_period
         # 更新指标的最小周期
         self.updateminperiod(indminperiod)
 
     def _stage2(self):
-        # 设置_stage2状态 - Cython优化
+        # 设置_stage2状态 - Cython深度优化：减少属性查找
         super(LineIterator, self)._stage2()
-        cdef object data
+        cdef object data, lineiterators, lineiterator
         cdef object datas = self.datas
+        
+        # 优化：直接遍历datas
         for data in datas:
             data._stage2()
 
-        cdef object lineiterators, lineiterator
-        cdef object iter_values = self._lineiterators.values()
-        for lineiterators in iter_values:
+        # 优化：直接遍历lineiterators的values
+        for lineiterators in self._lineiterators.values():
             for lineiterator in lineiterators:
                 lineiterator._stage2()
 
     def _stage1(self):
-        # 设置_stage1状态 - Cython优化
+        # 设置_stage1状态 - Cython深度优化：减少属性查找
         super(LineIterator, self)._stage1()
-        cdef object data
+        cdef object data, lineiterators, lineiterator
         cdef object datas = self.datas
+        
+        # 优化：直接遍历datas
         for data in datas:
             data._stage1()
 
-        cdef object lineiterators, lineiterator
-        cdef object iter_values = self._lineiterators.values()
-        for lineiterators in iter_values:
+        # 优化：直接遍历lineiterators的values
+        for lineiterators in self._lineiterators.values():
             for lineiterator in lineiterators:
                 lineiterator._stage1()
 
@@ -264,6 +299,9 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
 
     def bindlines(self, owner=None, own=None):
         # 给从own获取到的line的bindings中添加从owner获取到的line
+        # Cython深度优化：减少类型检查开销
+        cdef object lineowner, lineown, lownerref, lownref
+        cdef object owner_lines, self_lines
         
         if not owner:
             owner = 0
@@ -281,16 +319,20 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         elif not isinstance(own, collections.Iterable):
             own = [own]
 
+        # 缓存lines属性减少属性查找
+        owner_lines = self._owner.lines
+        self_lines = self.lines
+        
         for lineowner, lineown in zip(owner, own):
             if isinstance(lineowner, string_types):
-                lownerref = getattr(self._owner.lines, lineowner)
+                lownerref = getattr(owner_lines, lineowner)
             else:
-                lownerref = self._owner.lines[lineowner]
+                lownerref = owner_lines[lineowner]
             
             if isinstance(lineown, string_types):
-                lownref = getattr(self.lines, lineown)
+                lownref = getattr(self_lines, lineown)
             else:
-                lownref = self.lines[lineown]
+                lownref = self_lines[lineown]
             # lownref是从own属性获取到的line,lownerref是从owner获取到的属性
             lownref.addbinding(lownerref)
 
@@ -499,18 +541,24 @@ class MultiCoupler(LineIterator):
         self.dvals = [float('NaN')] * self.dsize
 
     def next(self):
-        # Cython深度优化
+        # Cython深度优化：缓存属性减少查找
         cdef int data_len = len(self.data)
-        cdef int i
+        cdef int i, dsize
+        cdef object dvals, data_lines, lines
+        
+        dsize = self.dsize
+        dvals = self.dvals
         
         if data_len > self.dlen:
             self.dlen += 1
+            data_lines = self.data.lines
+            
+            for i in range(dsize):
+                dvals[i] = data_lines[i][0]
 
-            for i in range(self.dsize):
-                self.dvals[i] = self.data.lines[i][0]
-
-        for i in range(self.dsize):
-            self.lines[i][0] = self.dvals[i]
+        lines = self.lines
+        for i in range(dsize):
+            lines[i][0] = dvals[i]
 
 def LinesCoupler(cdata, clock=None, **kwargs):
     # 如果是单条line，返回SingleCoupler
