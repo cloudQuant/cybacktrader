@@ -14,6 +14,24 @@
 
 from cybacktrader.indicator import Indicator
 
+# 内联C函数：释放GIL执行核心循环
+cdef inline void _compute_momentum(double[:] dst, double[:] cur, double[:] base, int start, int end, int period) noexcept nogil:
+    cdef int i
+    for i in range(start, end):
+        dst[i] = cur[i] - base[i - period]
+
+cdef inline void _compute_momosc(double[:] dst, double[:] cur, double[:] base, int start, int end, int period) noexcept nogil:
+    cdef int i
+    for i in range(start, end):
+        dst[i] = 100.0 * cur[i] / base[i - period]
+
+cdef inline void _compute_roc(double[:] dst, double[:] cur, double[:] base, int start, int end, int period) noexcept nogil:
+    cdef int i
+    cdef double denom
+    for i in range(start, end):
+        denom = base[i - period]
+        dst[i] = (cur[i] - denom) / denom if denom != 0.0 else 0.0
+
 # 动量指标，动量震荡指标，ROC指标，ROC指标乘以100
 class Momentum(Indicator):
     '''
@@ -40,10 +58,11 @@ class Momentum(Indicator):
         cdef double[:] dst = self.lines.momentum.array
         cdef double[:] cur = self.data.array
         cdef double[:] base = self.data.array
+        cdef int s = start
+        cdef int e = end
         period = self.p.period
-
-        for i in range(start, end):
-            dst[i] = cur[i] - base[i - period]
+        with nogil:
+            _compute_momentum(dst, cur, base, s, e, period)
 
 class MomentumOscillator(Indicator):
     '''
@@ -81,10 +100,11 @@ class MomentumOscillator(Indicator):
         cdef double[:] dst = self.lines.momosc.array
         cdef double[:] cur = self.data.array
         cdef double[:] base = self.data.array
+        cdef int s = start
+        cdef int e = end
         period = self.p.period
-
-        for i in range(start, end):
-            dst[i] = 100.0 * cur[i] / base[i - period]
+        with nogil:
+            _compute_momosc(dst, cur, base, s, e, period)
 
 class RateOfChange(Indicator):
     '''
@@ -116,11 +136,11 @@ class RateOfChange(Indicator):
         cdef double[:] cur = self.data.array
         cdef double[:] base = self.data.array
         cdef double denom
+        cdef int s = start
+        cdef int e = end
         period = self.p.period
-
-        for i in range(start, end):
-            denom = base[i - period]
-            dst[i] = (cur[i] - denom) / denom if denom != 0.0 else 0.0
+        with nogil:
+            _compute_roc(dst, cur, base, s, e, period)
 
 class RateOfChange100(Indicator):
     '''

@@ -25,7 +25,7 @@ to define interfaces and hierarchy for the real operational classes
 
 import operator
 from cybacktrader import metabase
-from cybacktrader.utils.py3 import range, with_metaclass
+from cybacktrader.utils.py3 import with_metaclass
 # from utils.py3 import range, with_metaclass
 # import metabase
 

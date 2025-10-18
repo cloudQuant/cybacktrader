@@ -16,7 +16,16 @@ import functools
 import math
 
 from cybacktrader.linebuffer import LineActions
-from cybacktrader.utils.py3 import cmp, range
+from cybacktrader.utils.py3 import cmp
+
+# C级比较函数：避免在热点循环中调用Python层cmp
+cdef inline int cmp_double(double a, double b) nogil:
+    if a < b:
+        return -1
+    elif a > b:
+        return 1
+    else:
+        return 0
 
 # Generate a List equivalent which uses "is" for contains
 # 创建一个新的List类,改写了__contains__方法,如果list中有一个元素的哈希值等于other的哈希值，那么就返回True
@@ -54,16 +63,16 @@ class DivByZero(Logic):
 
     def once(self, start, end):
         # Cython深度优化：除法保护
-        cdef int i
+        cdef int i, s = start, e = end
         cdef double b, zero_val = self.zero
-        
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
+        cdef double[:] dst = self.array
+        cdef double[:] srca = self.a.array
+        cdef double[:] srcb = self.b.array
 
-        for i in range(start, end):
-            b = srcb[i]
-            dst[i] = srca[i] / b if b != 0.0 else zero_val
+        with nogil:
+            for i in range(s, e):
+                b = srcb[i]
+                dst[i] = srca[i] / b if b != 0.0 else zero_val
 
 # 考虑分母分子都可能是0的两个line的想除操作
 class DivZeroByZero(Logic):
@@ -95,22 +104,22 @@ class DivZeroByZero(Logic):
 
     def once(self, start, end):
         # Cython深度优化：双零除法保护
-        cdef int i
+        cdef int i, s = start, e = end
         cdef double a, b
         cdef double single = self.single
         cdef double dual = self.dual
-        
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
+        cdef double[:] dst = self.array
+        cdef double[:] srca = self.a.array
+        cdef double[:] srcb = self.b.array
 
-        for i in range(start, end):
-            b = srcb[i]
-            a = srca[i]
-            if b == 0.0:
-                dst[i] = dual if a == 0.0 else single
-            else:
-                dst[i] = a / b
+        with nogil:
+            for i in range(s, e):
+                b = srcb[i]
+                a = srca[i]
+                if b == 0.0:
+                    dst[i] = dual if a == 0.0 else single
+                else:
+                    dst[i] = a / b
 
 # 对比a和b,a和b很可能是line
 class Cmp(Logic):
@@ -124,13 +133,14 @@ class Cmp(Logic):
 
     def once(self, start, end):
         # Cython优化：比较操作
-        cdef int i
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
+        cdef int i, s = start, e = end
+        cdef double[:] dst = self.array
+        cdef double[:] srca = self.a.array
+        cdef double[:] srcb = self.b.array
 
-        for i in range(start, end):
-            dst[i] = cmp(srca[i], srcb[i])
+        with nogil:
+            for i in range(s, e):
+                dst[i] = cmp_double(srca[i], srcb[i])
 
 # 对比两个line,a和b，a<b的时候，返回r1相应的值，a=b的时候，返回r2相应的值，a>b的时候，返回r3相应的值
 # todo 在backtrader量化交流群中有一个朋友指出了这个问题
@@ -154,25 +164,26 @@ class CmpEx(Logic):
 
     def once(self, start, end):
         # Cython优化：扩展比较
-        cdef int i
+        cdef int i, s = start, e = end
         cdef double ai, bi
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
-        r1 = self.r1.array
-        r2 = self.r2.array
-        r3 = self.r3.array
+        cdef double[:] dst = self.array
+        cdef double[:] srca = self.a.array
+        cdef double[:] srcb = self.b.array
+        cdef double[:] r1 = self.r1.array
+        cdef double[:] r2 = self.r2.array
+        cdef double[:] r3 = self.r3.array
 
-        for i in range(start, end):
-            ai = srca[i]
-            bi = srcb[i]
+        with nogil:
+            for i in range(s, e):
+                ai = srca[i]
+                bi = srcb[i]
 
-            if ai < bi:
-                dst[i] = r1[i]
-            elif ai > bi:
-                dst[i] = r3[i]
-            else:
-                dst[i] = r2[i]
+                if ai < bi:
+                    dst[i] = r1[i]
+                elif ai > bi:
+                    dst[i] = r3[i]
+                else:
+                    dst[i] = r2[i]
 
 # if判断，对于cond满足的时候，返回a相应的值，不满足的时候，返回b相应的值
 class If(Logic):
@@ -188,10 +199,10 @@ class If(Logic):
     def once(self, start, end):
         # Cython优化：IF条件
         cdef int i
-        dst = self.array
-        srca = self.a.array
-        srcb = self.b.array
-        cond = self.cond.array
+        cdef object dst = self.array
+        cdef object srca = self.a.array
+        cdef object srcb = self.b.array
+        cdef object cond = self.cond.array
 
         for i in range(start, end):
             dst[i] = srca[i] if cond[i] else srcb[i]

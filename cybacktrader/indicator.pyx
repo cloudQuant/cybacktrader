@@ -12,7 +12,7 @@
 # cython: optimize.unpack_method_calls=True
 # cython: optimize.use_switch=True
 
-from cybacktrader.utils.py3 import range, with_metaclass
+from cybacktrader.utils.py3 import with_metaclass
 
 from cybacktrader.lineiterator import LineIterator, IndicatorBase
 from cybacktrader.lineseries import LineSeriesMaker, Lines

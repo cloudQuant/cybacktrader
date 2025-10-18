@@ -16,7 +16,7 @@ import collections
 import operator
 import sys
 
-from cybacktrader.utils.py3 import map, range, zip, with_metaclass, string_types
+from cybacktrader.utils.py3 import map, zip, with_metaclass, string_types
 from cybacktrader.utils import DotDict
 
 from cybacktrader.lineroot import LineRoot, LineSingle

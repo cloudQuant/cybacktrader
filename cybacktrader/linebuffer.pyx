@@ -28,7 +28,7 @@ import datetime
 from itertools import islice
 import math
 
-from cybacktrader.utils.py3 import range, with_metaclass, string_types
+from cybacktrader.utils.py3 import with_metaclass, string_types
 
 from cybacktrader.lineroot import LineRoot, LineSingle, LineMultiple
 from cybacktrader import metabase
