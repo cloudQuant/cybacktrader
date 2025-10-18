@@ -31,6 +31,9 @@ from cybacktrader.lineroot import LineRoot, LineSingle, LineMultiple
 from cybacktrader.metabase import AutoInfoClass
 from cybacktrader import metabase
 
+# Cython imports for C-level optimization
+cimport cython
+
 class LineAlias(object):
     """ Descriptor class that store a line reference and returns that line
     from the owner
@@ -222,13 +225,24 @@ class Lines(object):
         """
         Return the alias for a line given the index
         """
-        # 类方法，根据具体的index i 返回line的名字
+        # 类方法，根据具体的index i 返回line的名字 - Cython深度优化
+        cdef object lines
+        cdef int idx, lines_len
+        
         lines = cls._getlines()
-        if i >= len(lines):
-            return ''
-        linealias = lines[i]   # backtrader自带
-        return linealias       # backtrader自带
-        # return lines[i]
+        lines_len = len(lines)
+        
+        # Fast path with C types
+        try:
+            idx = <int>i
+            if idx >= lines_len:
+                return ''
+            return lines[idx]
+        except (TypeError, OverflowError):
+            # Fallback for edge cases
+            if i >= lines_len:
+                return ''
+            return lines[i]
 
     @classmethod
     def getlinealiases(cls):
@@ -269,15 +283,18 @@ class Lines(object):
         return len(self.lines[0])
 
     def size(self):
-        # 返回正常的line的数量
-        return len(self.lines) - self._getlinesextra()
+        # 返回正常的line的数量 - Cython深度优化
+        cdef int total, extra
+        total = len(self.lines)
+        extra = self._getlinesextra()
+        return total - extra
 
     def fullsize(self):
-        # 返回全部的line的数量
+        # 返回全部的line的数量 - Cython深度优化  
         return len(self.lines)
 
     def extrasize(self):
-        # 返回额外line的数量
+        # 返回额外line的数量 - Cython深度优化
         return self._getlinesextra()
 
     def __getitem__(self, line):
