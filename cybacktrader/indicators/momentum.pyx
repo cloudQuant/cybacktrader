@@ -34,6 +34,17 @@ class Momentum(Indicator):
         self.l.momentum = self.data - self.data(-self.p.period)
         super(Momentum, self).__init__()
 
+    def once(self, start, end):
+        # Cython深度优化：momentum = data - data_period
+        cdef int i, period
+        cdef double[:] dst = self.lines.momentum.array
+        cdef double[:] cur = self.data.array
+        cdef double[:] base = self.data.array
+        period = self.p.period
+
+        for i in range(start, end):
+            dst[i] = cur[i] - base[i - period]
+
 class MomentumOscillator(Indicator):
     '''
     Measures the ratio of change in prices over a period
@@ -64,6 +75,17 @@ class MomentumOscillator(Indicator):
         self.l.momosc = 100.0 * (self.data / self.data(-self.p.period))
         super(MomentumOscillator, self).__init__()
 
+    def once(self, start, end):
+        # Cython深度优化：momosc = 100 * data / data_period
+        cdef int i, period
+        cdef double[:] dst = self.lines.momosc.array
+        cdef double[:] cur = self.data.array
+        cdef double[:] base = self.data.array
+        period = self.p.period
+
+        for i in range(start, end):
+            dst[i] = 100.0 * cur[i] / base[i - period]
+
 class RateOfChange(Indicator):
     '''
     Measures the ratio of change in prices over a period
@@ -86,6 +108,19 @@ class RateOfChange(Indicator):
         dperiod = self.data(-self.p.period)
         self.l.roc = (self.data - dperiod) / dperiod
         super(RateOfChange, self).__init__()
+
+    def once(self, start, end):
+        # Cython深度优化：roc = (data - data_period) / data_period
+        cdef int i, period
+        cdef double[:] dst = self.lines.roc.array
+        cdef double[:] cur = self.data.array
+        cdef double[:] base = self.data.array
+        cdef double denom
+        period = self.p.period
+
+        for i in range(start, end):
+            denom = base[i - period]
+            dst[i] = (cur[i] - denom) / denom if denom != 0.0 else 0.0
 
 class RateOfChange100(Indicator):
     '''
