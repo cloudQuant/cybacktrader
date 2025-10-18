@@ -58,3 +58,18 @@ class TrueStrengthIndicator(bt.Indicator):
         sm22 = self.p._movav(sm2, period=self.p.period2)
 
         self.lines.tsi = 100.0 * (sm12 / sm22)
+        # Save refs for fast once
+        self._sm12 = sm12
+        self._sm22 = sm22
+
+    def once(self, start, end):
+        # Cython深度优化：tsi = 100 * sm12 / sm22
+        cdef int i, s = start, e = end
+        cdef double[:] dst = self.lines.tsi.array
+        cdef double[:] num = self._sm12.array
+        cdef double[:] den = self._sm22.array
+        cdef double d
+        with nogil:
+            for i in range(s, e):
+                d = den[i]
+                dst[i] = 100.0 * num[i] / d if d != 0.0 else 0.0

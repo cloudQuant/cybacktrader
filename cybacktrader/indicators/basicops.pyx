@@ -12,7 +12,7 @@ import functools
 import math
 import operator
 
-from ..utils.py3 import map, range
+from ..utils.py3 import map
 
 from cybacktrader import Indicator
 import array
@@ -104,6 +104,22 @@ class Highest(OperationN):
     lines = ('highest',)
     func = max
 
+    def once(self, start, end):
+        # Cython优化：窗口内最大值（typed memoryviews + nogil）
+        cdef int i, j, period, s = start, e = end
+        cdef double val, m
+        cdef double[:] src = self.data.array
+        cdef double[:] dst = self.line.array
+        period = self.p.period
+        with nogil:
+            for i in range(s, e):
+                m = src[i - period + 1]
+                for j in range(1, period):
+                    val = src[i - period + 1 + j]
+                    if val > m:
+                        m = val
+                dst[i] = m
+
 # 计算过去N个周期的最低价
 class Lowest(OperationN):
     '''
@@ -117,6 +133,22 @@ class Lowest(OperationN):
     alias = ('MinN',)
     lines = ('lowest',)
     func = min
+
+    def once(self, start, end):
+        # Cython优化：窗口内最小值（typed memoryviews + nogil）
+        cdef int i, j, period, s = start, e = end
+        cdef double val, m
+        cdef double[:] src = self.data.array
+        cdef double[:] dst = self.line.array
+        period = self.p.period
+        with nogil:
+            for i in range(s, e):
+                m = src[i - period + 1]
+                for j in range(1, period):
+                    val = src[i - period + 1 + j]
+                    if val < m:
+                        m = val
+                dst[i] = m
 
 # 模仿python的reduce功能
 class ReduceN(OperationN):
@@ -162,6 +194,27 @@ class SumN(OperationN):
     lines = ('sumn',)
     func = math.fsum
 
+    def once(self, start, end):
+        # Cython优化：滚动求和（typed memoryviews + nogil）
+        cdef int i, j, period, s = start, e = end
+        cdef double sum_val, old_val, new_val
+        cdef double[:] src = self.data.array
+        cdef double[:] dst = self.line.array
+        cdef int s1
+        period = self.p.period
+        if s < e:
+            sum_val = 0.0
+            for j in range(period):
+                sum_val += src[s - period + 1 + j]
+            dst[s] = sum_val
+            s1 = s + 1
+            with nogil:
+                for i in range(s1, e):
+                    old_val = src[i - period]
+                    new_val = src[i]
+                    sum_val = sum_val - old_val + new_val
+                    dst[i] = sum_val
+
 # 如果过去N周期有一个是True，就返回True
 class AnyN(OperationN):
     '''
@@ -176,6 +229,22 @@ class AnyN(OperationN):
     lines = ('anyn',)
     func = any
 
+    def once(self, start, end):
+        # Cython优化：窗口内任一非零（typed memoryviews + nogil）
+        cdef int i, j, period, s = start, e = end
+        cdef double[:] src = self.data.array
+        cdef double[:] dst = self.line.array
+        cdef bint anynz
+        period = self.p.period
+        with nogil:
+            for i in range(s, e):
+                anynz = 0
+                for j in range(period):
+                    if src[i - period + 1 + j] != 0.0:
+                        anynz = 1
+                        break
+                dst[i] = 1.0 if anynz else 0.0
+
 # 如果过去N周期所有的都是True，就返回True
 class AllN(OperationN):
     '''
@@ -189,6 +258,22 @@ class AllN(OperationN):
     '''
     lines = ('alln',)
     func = all
+
+    def once(self, start, end):
+        # Cython优化：窗口内全非零（typed memoryviews + nogil）
+        cdef int i, j, period, s = start, e = end
+        cdef double[:] src = self.data.array
+        cdef double[:] dst = self.line.array
+        cdef bint allnz
+        period = self.p.period
+        with nogil:
+            for i in range(s, e):
+                allnz = 1
+                for j in range(period):
+                    if src[i - period + 1 + j] == 0.0:
+                        allnz = 0
+                        break
+                dst[i] = 1.0 if allnz else 0.0
 
 # 返回满足条件的最早出现的数据
 class FindFirstIndex(OperationN):
@@ -328,15 +413,15 @@ class Accum(Indicator):
 
     def once(self, start, end):
         # Cython深度优化：累积求和（typed memoryviews）
-        cdef int i
+        cdef int i, s = start, e = end
         cdef double prev
         cdef double[:] dst_mv = self.line.array
         cdef double[:] src_mv = self.data.array
-        prev = dst_mv[start - 1]
-
-        for i in range(start, end):
-            prev = prev + src_mv[i]
-            dst_mv[i] = prev
+        prev = dst_mv[s - 1]
+        with nogil:
+            for i in range(s, e):
+                prev = prev + src_mv[i]
+                dst_mv[i] = prev
 
 # 计算平均值
 class Average(PeriodN):
@@ -358,7 +443,7 @@ class Average(PeriodN):
 
     def once(self, start, end):
         # Cython深度优化：使用滚动求和算法（typed memoryviews）
-        cdef int i, j
+        cdef int i, j, s = start, e = end
         cdef int period = self.p.period
         cdef double sum_val, old_val, new_val
         cdef double period_inv = 1.0 / period  # 预计算除数
@@ -367,18 +452,20 @@ class Average(PeriodN):
         cdef double[:] dst_mv = self.line.array
 
         # 计算第一个值
-        if start < end:
+        if s < e:
             sum_val = 0.0
             for j in range(period):
-                sum_val += src_mv[start - period + 1 + j]
-            dst_mv[start] = sum_val * period_inv
+                sum_val += src_mv[s - period + 1 + j]
+            dst_mv[s] = sum_val * period_inv
 
             # 滚动求和：O(n)而不是O(n*period)
-            for i in range(start + 1, end):
-                old_val = src_mv[i - period]
-                new_val = src_mv[i]
-                sum_val = sum_val - old_val + new_val
-                dst_mv[i] = sum_val * period_inv
+            s1 = s + 1
+            with nogil:
+                for i in range(s1, e):
+                    old_val = src_mv[i - period]
+                    new_val = src_mv[i]
+                    sum_val = sum_val - old_val + new_val
+                    dst_mv[i] = sum_val * period_inv
 
 # 计算指数平均值
 class ExponentialSmoothing(Average):
@@ -419,7 +506,7 @@ class ExponentialSmoothing(Average):
 
     def once(self, start, end):
         # Cython深度优化：EMA计算（typed memoryviews）
-        cdef int i
+        cdef int i, s = start, e = end
         cdef double prev, alpha, alpha1
 
         cdef double[:] d_mv = self.data.array
@@ -428,10 +515,11 @@ class ExponentialSmoothing(Average):
         alpha1 = self.alpha1
 
         # Seed value from SMA calculated with the call to oncestart
-        prev = l_mv[start - 1]
-        for i in range(start, end):
-            prev = prev * alpha1 + d_mv[i] * alpha
-            l_mv[i] = prev
+        prev = l_mv[s - 1]
+        with nogil:
+            for i in range(s, e):
+                prev = prev * alpha1 + d_mv[i] * alpha
+                l_mv[i] = prev
 
 # 动态指数移动平均值
 class ExponentialSmoothingDynamic(ExponentialSmoothing):
@@ -467,7 +555,7 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
 
     def once(self, start, end):
         # Cython深度优化：EMA动态计算（typed memoryviews）
-        cdef int i
+        cdef int i, s = start, e = end
         cdef double prev
 
         cdef double[:] d_mv = self.data.array
@@ -476,10 +564,11 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
         cdef double[:] alpha1_mv = self.alpha1.array
 
         # Seed value from SMA calculated with the call to oncestart
-        prev = l_mv[start - 1]
-        for i in range(start, end):
-            prev = prev * alpha1_mv[i] + d_mv[i] * alpha_mv[i]
-            l_mv[i] = prev
+        prev = l_mv[s - 1]
+        with nogil:
+            for i in range(s, e):
+                prev = prev * alpha1_mv[i] + d_mv[i] * alpha_mv[i]
+                l_mv[i] = prev
 
 # 加权移动平均值
 class WeightedAverage(PeriodN):

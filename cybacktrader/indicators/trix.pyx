@@ -52,6 +52,7 @@ class Trix(Indicator):
 
         # 1 period Percentage Rate of Change
         self.lines.trix = 100.0 * (ema3 / ema3(-self.p._rocperiod) - 1.0)
+        self._ema3 = ema3
 
         super(Trix, self).__init__()
 
@@ -73,3 +74,15 @@ class TrixSignal(Trix):
         super(TrixSignal, self).__init__()
 
         self.l.signal = self.p._movav(self.lines[0], period=self.p.sigperiod)
+
+    def once(self, start, end):
+        # Cython深度优化：trix = 100 * (ema3 / ema3(-roc) - 1)
+        cdef int i, s = start, e = end
+        cdef int roc = self.p._rocperiod
+        cdef double[:] dst = self.lines.trix.array
+        cdef double[:] ema3 = self._ema3.array
+        cdef double prev
+        with nogil:
+            for i in range(s, e):
+                prev = ema3[i - roc]
+                dst[i] = 100.0 * (ema3[i] / prev - 1.0) if prev != 0.0 else 0.0

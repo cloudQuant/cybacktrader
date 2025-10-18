@@ -76,6 +76,8 @@ class PercentagePriceOscillator(_PriceOscBase):
         self.l.signal = self.p._movav(self.l.ppo, period=self.p.period_signal)
         self.lines.histo = self.lines.ppo - self.lines.signal
 
+    # Use default once behavior to preserve exact values from expression
+
 class PercentagePriceOscillatorShort(PercentagePriceOscillator):
     '''
     Shows the difference between a short and long exponential moving
