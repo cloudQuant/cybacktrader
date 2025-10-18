@@ -17,7 +17,7 @@ from copy import copy
 import datetime
 import itertools
 
-from cybacktrader.utils.py3 import range, with_metaclass, iteritems
+from cybacktrader.utils.py3 import with_metaclass, iteritems
 
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils import AutoOrderedDict

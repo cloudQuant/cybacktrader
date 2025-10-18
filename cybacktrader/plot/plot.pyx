@@ -39,7 +39,7 @@ from dash.dependencies import Input, Output
 
 from collections import OrderedDict
 
-from ..utils.py3 import range, with_metaclass, string_types, integer_types
+from ..utils.py3 import with_metaclass, string_types, integer_types
 from .. import AutoInfoClass, MetaParams, TimeFrame, date2num
 
 from cybacktrader.finance import plot_candlestick, plot_ohlc, plot_volume, plot_lineonclose

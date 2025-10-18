@@ -6,7 +6,6 @@
 # cython: infer_types=True
 
 from collections import OrderedDict
-from cybacktrader.utils.py3 import range
 from cybacktrader.utils.date import num2date
 from cybacktrader import Analyzer
 

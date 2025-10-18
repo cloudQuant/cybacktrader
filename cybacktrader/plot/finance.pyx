@@ -4,7 +4,7 @@
 # Cython性能优化标记
 # cython: language_level=3
 
-from ..utils.py3 import range, zip
+from ..utils.py3 import zip
 
 import matplotlib.collections as mcol
 import matplotlib.colors as mcolors

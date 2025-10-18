@@ -9,7 +9,7 @@ import itertools
 
 from cybacktrader.utils import AutoOrderedDict
 from cybacktrader.utils.date import num2date
-from cybacktrader.utils.py3 import range
+# use builtin range for C-level loop optimization
 
 # 交易历史
 class TradeHistory(AutoOrderedDict):

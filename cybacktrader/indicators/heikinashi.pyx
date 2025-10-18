@@ -9,7 +9,6 @@
 # cython: cdivision=True
 
 import cybacktrader as bt
-from cybacktrader.utils.py3 import range
 
 __all__ = ['HeikinAshi']
 

@@ -7,7 +7,6 @@
 from datetime import datetime
 
 import cybacktrader as bt
-from cybacktrader.utils.py3 import range
 
 # 创建一个chainer的元类
 class MetaChainer(bt.DataBase.__class__):

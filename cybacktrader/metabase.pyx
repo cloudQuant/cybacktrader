@@ -11,7 +11,7 @@ import threading
 from collections import OrderedDict
 
 import cybacktrader as bt
-from cybacktrader.utils.py3 import range, zip, string_types, with_metaclass
+from cybacktrader.utils.py3 import zip, string_types, with_metaclass
 
 # Thread-local storage for owner stack (for Cython compatibility)
 _owner_stack = threading.local()
