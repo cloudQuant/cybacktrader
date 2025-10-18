@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython深度性能优化标记
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
+# cython: nonecheck=False
 # cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 from cybacktrader.comminfo import CommInfoBase
 from cybacktrader.metabase import MetaParams
@@ -16,12 +19,14 @@ from cybacktrader.utils.py3 import with_metaclass
 # from . import fillers as fillers
 # from . import fillers as filler
 
-# broker元类，使得get_cash与getcash,get_value与getvalue方法相同 - Cython优化
+# broker元类，使得get_cash与getcash,get_value与getvalue方法相同 - Cython深度优化
 class MetaBroker(MetaParams):
     def __init__(cls, name, bases, dct):
+        """Initialize broker metaclass with method translations"""
         # Class has already been created ... fill missing methods if needed be
-        # Initialize the class
         cdef object attr, trans
+        cdef dict translations
+        
         super(MetaBroker, cls).__init__(name, bases, dct)
         translations = {
             'get_cash': 'getcash',
@@ -30,7 +35,7 @@ class MetaBroker(MetaParams):
 
         for attr, trans in translations.items():
             if not hasattr(cls, attr):
-                setattr(cls, name, getattr(cls, trans))
+                setattr(cls, attr, getattr(cls, trans))
 
 # broker基类
 class BrokerBase(with_metaclass(MetaBroker, object)):
