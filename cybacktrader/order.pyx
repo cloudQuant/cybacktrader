@@ -22,6 +22,9 @@ from cybacktrader.utils.py3 import with_metaclass, iteritems
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils import AutoOrderedDict
 
+# Cython imports for C-level optimization
+cimport cython
+
 # 保存订单执行相关的信息，这个信息并不能决定订单是完全或者部分执行，它仅仅保存信息
 class OrderExecutionBit(object):
     """
@@ -61,7 +64,8 @@ class OrderExecutionBit(object):
       # 已经开仓部分的仓位价格
 
     """
-    # 对订单执行信息进行初始化
+    # 对订单执行信息进行初始化 - Cython深度优化
+    @cython.cdivision(True)
     def __init__(self,
                  dt=None, size=0, price=0.0,
                  closed=0, closedvalue=0.0, closedcomm=0.0,
@@ -69,6 +73,9 @@ class OrderExecutionBit(object):
                  pnl=0.0,
                  psize=0, pprice=0.0):
 
+        # 优化：使用局部变量减少重复计算
+        cdef double total_value, total_comm
+        
         self.dt = dt
         self.size = size
         self.price = price
@@ -80,8 +87,12 @@ class OrderExecutionBit(object):
         self.closedcomm = closedcomm
         self.openedcomm = openedcomm
 
-        self.value = closedvalue + openedvalue
-        self.comm = closedcomm + openedcomm
+        # 优化：使用C级别算术
+        total_value = closedvalue + openedvalue
+        total_comm = closedcomm + openedcomm
+        
+        self.value = total_value
+        self.comm = total_comm
         self.pnl = pnl
 
         self.psize = psize
@@ -183,11 +194,13 @@ class OrderData(object):
 
     plimit = property(_getplimit, _setplimit)
 
-    # 返回执行信息的长度
+    # 返回执行信息的长度 - Cython深度优化
+    @cython.final
     def __len__(self):
         return len(self.exbits)
 
-    # 获取执行信息的某个值
+    # 获取执行信息的某个值 - Cython深度优化
+    @cython.final
     def __getitem__(self, key):
         return self.exbits[key]
 
@@ -232,17 +245,23 @@ class OrderData(object):
         self.psize = exbit.psize
         self.pprice = exbit.pprice
 
-    # 获取当前等待执行信息
+    # 获取当前等待执行信息 - Cython深度优化
+    @cython.final
     def getpending(self):
         return list(self.iterpending())
 
-    # 把订单等待执行信息切片，如果p1和p2都是等于0,似乎得到的是空的
+    # 把订单等待执行信息切片，如果p1和p2都是等于0,似乎得到的是空的 - Cython深度优化
+    @cython.final
     def iterpending(self):
         return itertools.islice(self.exbits, self.p1, self.p2)
-    # 标记哪些是pending的订单执行信息
+    
+    # 标记哪些是pending的订单执行信息 - Cython深度优化
+    @cython.final
     def markpending(self):
         # rebuild the indices to mark which exbits are pending in clone
-        self.p1, self.p2 = self.p2, len(self.exbits)
+        cdef int exbits_len = len(self.exbits)
+        self.p1 = self.p2
+        self.p2 = exbits_len
     # 对对象进行克隆
     def clone(self):
         self.markpending()
