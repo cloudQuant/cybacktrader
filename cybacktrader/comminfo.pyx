@@ -1,14 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记（保守设置）
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 # import datetime
 
 from cybacktrader.utils.py3 import with_metaclass
 from cybacktrader.metabase import MetaParams
+
+# Cython imports for C-level optimization
+cimport cython
 
 # 佣金类
 class CommInfoBase(with_metaclass(MetaParams)):
@@ -181,7 +191,9 @@ class CommInfoBase(with_metaclass(MetaParams)):
     def stocklike(self):
         return self._stocklike
 
-    # 获取margin todo 这个算法个人不太确定对不对，感觉有点不符合逻辑，后续回来检查
+    # 获取margin - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def get_margin(self, price):
         """Returns the actual margin/guarantees needed for a single item of the
         asset at the given price. The default implementation has this policy:
@@ -192,53 +204,73 @@ class CommInfoBase(with_metaclass(MetaParams)):
 
           - Use param ``automargin`` * ``price`` if ``automargin > 0``
         """
-        # print("运行的是backtrader的get_margin")
-        if not self.p.automargin:
+        cdef double price_val = price
+        cdef double automargin_val = self.p.automargin
+        
+        if not automargin_val:
             return self.p.margin
 
-        elif self.p.automargin < 0:
-            return price * self.p.mult
+        elif automargin_val < 0:
+            return price_val * self.p.mult
 
-        return price * self.p.automargin  # int/float expected
+        return price_val * automargin_val  # int/float expected
 
-    # 获取杠杆
+    # 获取杠杆 - Cython深度优化
+    @cython.final
     def get_leverage(self):
-
         # Returns the level of leverage allowed for this commission scheme
         return self.p.leverage
 
-    # 根据cash和size计算手数
+    # 根据cash和size计算手数 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def getsize(self, price, cash):
         # Returns the needed size to meet a cash operation at a given price
-        # todo 此处原版代码做了取整，在实际使用中，可能并不是很符合场景，这里去除取整
-        # if not self._stocklike:
-        #     return int(self.p.leverage * (cash // self.get_margin(price)))
-        #
-        # return int(self.p.leverage * (cash // price))
-        if not self._stocklike:
-            return self.p.leverage * (cash // self.get_margin(price))
+        cdef double price_val = price
+        cdef double cash_val = cash
+        cdef double margin_val, leverage_val
+        cdef bint is_stocklike = self._stocklike
+        
+        leverage_val = self.p.leverage
+        
+        if not is_stocklike:
+            margin_val = self.get_margin(price_val)
+            return leverage_val * (cash_val // margin_val)
 
-        return self.p.leverage * (cash // price)
+        return leverage_val * (cash_val // price_val)
 
-    # 获取操作成本
+    # 获取操作成本 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def getoperationcost(self, size, price):
         # Returns the needed amount of cash an operation would cost
-        # print(f"当前运行的是{'getoperationcost'}")
-        if not self._stocklike:
-            return abs(size) * self.get_margin(price)
+        cdef long size_val = size
+        cdef double price_val = price
+        cdef double margin_val
+        cdef bint is_stocklike = self._stocklike
+        
+        if not is_stocklike:
+            margin_val = self.get_margin(price_val)
+            return abs(size_val) * margin_val
 
-        return abs(size) * price
+        return abs(size_val) * price_val
 
-    # 获取size的市值
+    # 获取size的市值 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def getvaluesize(self, size, price):
         # Returns the value of size for given a price. For future-like
         # objects it is fixed at size * margin
-        # print(f"当前运行的是{'getvaluesize'}")
-        # print(size, self.get_margin(price))
-        if not self._stocklike:
-            return abs(size) * self.get_margin(price)
+        cdef long size_val = size
+        cdef double price_val = price
+        cdef double margin_val
+        cdef bint is_stocklike = self._stocklike
+        
+        if not is_stocklike:
+            margin_val = self.get_margin(price_val)
+            return abs(size_val) * margin_val
 
-        return size * price
+        return size_val * price_val
 
     # 获取持仓的市值
     def getvalue(self, position, price):
@@ -256,36 +288,61 @@ class CommInfoBase(with_metaclass(MetaParams)):
         value += (position.price - price) * size  # increased value
         return value
 
-    # 获取佣金
+    # 获取佣金 - Cython深度优化
+    @cython.cdivision(True)
     def _getcommission(self, size, price, pseudoexec):
         """Calculates the commission of an operation at a given price
 
         pseudoexec: if True the operation has not yet been executed
         """
-        if self._commtype == self.COMM_PERC:
-            return abs(size) * self.p.commission * price
+        cdef long size_val = size
+        cdef double price_val = price
+        cdef double comm_val = self.p.commission
+        cdef int commtype = self._commtype
+        
+        if commtype == self.COMM_PERC:
+            return abs(size_val) * comm_val * price_val
 
-        return abs(size) * self.p.commission
+        return abs(size_val) * comm_val
 
-    # 获取佣金的接口
+    # 获取佣金的接口 - Cython深度优化
+    @cython.final
     def getcommission(self, size, price):
         # Calculates the commission of an operation at a given price
         return self._getcommission(size, price, pseudoexec=True)
 
-    # 确认交易执行
+    # 确认交易执行 - Cython深度优化
+    @cython.final
     def confirmexec(self, size, price):
         return self._getcommission(size, price, pseudoexec=False)
 
-    # 计算pnl
+    # 计算pnl - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def profitandloss(self, size, price, newprice):
         # Return actual profit and loss a position has
-        return size * (newprice - price) * self.p.mult
+        cdef long size_val = size
+        cdef double price_val = price
+        cdef double newprice_val = newprice
+        cdef double mult_val = self.p.mult
+        
+        return size_val * (newprice_val - price_val) * mult_val
 
-    # 调整现金
+    # 调整现金 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def cashadjust(self, size, price, newprice):
         # Calculates cash adjustment for a given price difference
-        if not self._stocklike:
-            return size * (newprice - price) * self.p.mult
+        cdef long size_val
+        cdef double price_val, newprice_val, mult_val
+        cdef bint is_stocklike = self._stocklike
+        
+        if not is_stocklike:
+            size_val = size
+            price_val = price
+            newprice_val = newprice
+            mult_val = self.p.mult
+            return size_val * (newprice_val - price_val) * mult_val
 
         return 0.0
 
@@ -306,7 +363,8 @@ class CommInfoBase(with_metaclass(MetaParams)):
         return self._get_credit_interest(data, size, price,
                                          (dt0 - dt1).days, dt0, dt1)
 
-    # 计算利息的方法，可以重写
+    # 计算利息的方法，可以重写 - Cython深度优化
+    @cython.cdivision(True)
     def _get_credit_interest(self, data, size, price, days, dt0, dt1):
         """
         This method returns  the cost in terms of credit interest charged by
@@ -337,7 +395,12 @@ class CommInfoBase(with_metaclass(MetaParams)):
         ``dt0`` and ``dt1`` are not used in the default implementation and are
         provided as extra input for overridden methods
         """
-        return days * self._creditrate * abs(size) * price
+        cdef int days_val = days
+        cdef long size_val = size
+        cdef double price_val = price
+        cdef double creditrate_val = self._creditrate
+        
+        return days_val * creditrate_val * abs(size_val) * price_val
 
 # 佣金类，commission大小使用其本身
 class CommissionInfo(CommInfoBase):
