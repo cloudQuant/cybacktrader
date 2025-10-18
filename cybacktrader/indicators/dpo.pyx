@@ -53,5 +53,18 @@ class DetrendedPriceOscillator(Indicator):
 
         # Calculate value (look back period/2 + 1 in MA) and bind to 'dpo' line
         self.lines.dpo = self.data - ma(-self.p.period // 2 + 1)
+        # 保存引用以便 once 中使用高效数组访问
+        self._ma_ref = ma
 
         super(DetrendedPriceOscillator, self).__init__()
+
+    def once(self, start, end):
+        # Cython深度优化：使用 typed memoryviews 与 C 循环
+        cdef int i
+        cdef int shift = self.p.period // 2 - 1  # 对应 ma(-period//2 + 1)
+        cdef double[:] dst = self.lines.dpo.array
+        cdef double[:] src = self.data.array
+        cdef double[:] ma_arr = self._ma_ref.array
+
+        for i in range(start, end):
+            dst[i] = src[i] - ma_arr[i - shift]
