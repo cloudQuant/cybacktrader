@@ -29,6 +29,9 @@ from cybacktrader.utils.py3 import with_metaclass
 # from utils.py3 import range, with_metaclass
 # import metabase
 
+# Cython imports for C-level optimization
+cimport cython
+
 class MetaLineRoot(metabase.MetaParams):
     """
     Once the object is created (effectively pre-init) the "owner" of this
@@ -80,25 +83,29 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
     # 指标类型、策略类型和观察类型的值分别是0,1,2
     IndType, StratType, ObsType = range(3)
 
-    # 转变操作状态为1
+    # 转变操作状态为1 - Cython深度优化
+    @cython.final
     def _stage1(self):
         self._opstage = 1
 
-    # 转变操作状态为2
+    # 转变操作状态为2 - Cython深度优化
+    @cython.final
     def _stage2(self):
         self._opstage = 2
 
-    # 根据line的操作状态决定调用哪种操作算法
+    # 根据line的操作状态决定调用哪种操作算法 - Cython深度优化
     def _operation(self, other, operation, r=False, intify=False):
-        if self._opstage == 1:
+        cdef int opstage = self._opstage
+        if opstage == 1:
             return self._operation_stage1(
                 other, operation, r=r, intify=intify)
 
         return self._operation_stage2(other, operation, r=r)
     
-    # 自身的操作
+    # 自身的操作 - Cython深度优化
     def _operationown(self, operation):
-        if self._opstage == 1:
+        cdef int opstage = self._opstage
+        if opstage == 1:
             return self._operationown_stage1(operation)
 
         return self._operationown_stage2(operation)
