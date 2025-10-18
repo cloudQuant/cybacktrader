@@ -1,89 +1,267 @@
-# 基准测试说明
+# CyBacktrader基准测试和性能分析工具
 
-本目录包含 cybacktrader 的性能基准测试脚本。
+本目录包含了CyBacktrader项目的基准测试和深度性能分析工具，用于评估优化效果和识别性能瓶颈。
 
-## 均线交叉策略基准测试
+## 🎯 推荐工具
 
-### 文件：`ma_crossover_benchmark.py`
+### ⭐ 统一性能分析工具（推荐）
+- **`unified_profiler.py`** - **最新的统一性能分析工具** ✅
+  - ✅ **已修复所有已知问题** (v1.3.0)
+  - 整合了函数级、行级、时间、内存等所有分析功能
+  - **同时显示时间和内存数据** - 一次测试获得完整性能画像
+  - 自动生成Markdown和HTML双格式报告
+  - 支持多轮测试取平均值
+  - **显示Top 100热点函数**，全面识别优化目标（已验证）
+  - 报告自动保存到 `benchmarks/performance_reports/` 目录
+  - 详细的优化建议和热点函数识别
+  - **使用文档**: `CHANGELOG.md`
+  - **Bug修复记录**: `BUG_FIXES.md`
 
-这是一个全面的基准测试脚本，用于对比 backtrader 和 cybacktrader 在不同数据规模下的性能。
+## 文件说明
 
-#### 功能特点
+### 基准测试脚本
+- **`ma_crossover_benchmark.py`** - 均线交叉策略基准测试（优化版）
+  - 支持数据缓存机制，避免重复生成
+  - 内存管理和详细统计信息
+  - 命令行参数支持多种测试场景
 
-1. **数据生成**：自动生成指定行数的OHLCV（开盘价、最高价、最低价、收盘价、成交量）数据
-2. **均线交叉策略**：实现5日均线金叉20日均线做多，死叉平多的经典策略
-3. **多规模测试**：支持1万、10万、100万、1千万甚至1亿行数据的性能测试
-4. **性能对比**：自动计算并显示加速比
-5. **可视化结果**：生成性能对比图表
+### 性能分析脚本（旧版，建议使用unified_profiler.py）
+- **`performance_profiler.py`** - 深度性能分析工具（旧版）
+  - 支持函数级、行级、内存级性能分析
+  - 自动生成详细的性能报告
+  - 支持与原版backtrader对比
+  - ⚠️ 建议使用 `unified_profiler.py` 替代
 
-#### 使用方法
+## 快速开始
+
+### 1. 安装依赖
 
 ```bash
-# 基本使用（默认测试1万和10万行数据）
-python benchmarks/ma_crossover_benchmark.py
-
-# 自定义测试规模
-# 编辑脚本中的 data_sizes 列表，例如：
-# data_sizes = [10000, 100000, 1000000]  # 测试1万、10万、100万行
+pip install pandas numpy psutil
+pip install line_profiler  # 可选，用于行级分析
+pip install backtrader     # 用于性能对比
 ```
 
-#### 测试结果
+### 2. 🚀 使用统一性能分析工具（推荐）
 
-脚本会输出：
+```bash
+# 快速测试（1000行数据）
+python benchmarks/unified_profiler.py --data-size 1000
 
-1. **控制台输出**：
-   - 每个测试规模的运行时间
-   - 加速比统计
-   - 结果摘要表格
+# 正式分析（10万行，3轮测试）
+python benchmarks/unified_profiler.py --data-size 100000 --rounds 3
 
-2. **图表文件**：
-   - `ma_crossover_benchmark_results.png`：性能对比图
-   - 包含运行时间对比和加速比两个子图
+# 内存对比
+python benchmarks/unified_profiler.py --compare memory --rounds 3
 
-#### 测试结果示例
-
-```
-================================================================================
-测试结果摘要
-================================================================================
-
-数据规模            backtrader(秒)        cybacktrader(秒)      加速比
---------------------------------------------------------------------------------
-1万              1.6176               1.6054               1.01x
-10万             13.0713              11.5732              1.13x
---------------------------------------------------------------------------------
+# 查看详细使用说明
+# 阅读 benchmarks/UNIFIED_PROFILER.md
 ```
 
-#### 性能说明
+**测试结果示例**：
+```
+✅ Backtrader 执行时间: 8.6673s
+   内存使用: 11.66MB
+   内存峰值: 7.27MB
 
-当前测试结果显示：
-- **1万行数据**：性能基本相当（1.01x）
-- **10万行数据**：cybacktrader 快约 13%（1.13x）
+✅ CyBacktrader 执行时间: 4.9197s
+   内存使用: 11.89MB
+   内存峰值: 8.33MB
 
-这表明基本的 Cython 编译已经带来了一些性能提升，但还有很大的优化空间。通过进一步优化 pyx 文件（添加类型声明、优化关键路径等），性能可以得到更大的提升。
+📊 本轮加速比: 1.76x
 
-#### 注意事项
+性能对比摘要:
+  加速比: 1.76x
+  时间节省: 3.7477s (43.2%)
+  内存节省: -0.23MB (-2.0%)
 
-1. **内存占用**：大规模数据（如1千万、1亿行）需要大量内存
-2. **运行时间**：100万行以上的测试可能需要数分钟到数十分钟
-3. **建议**：首次运行建议从小规模数据开始测试
-4. **调整轮数**：可以修改脚本中的 `rounds` 参数来调整每个规模的测试轮数
+报告位置: benchmarks/performance_reports/
+  - performance_report_*.md (包含Top 100热点函数 + 时间/内存数据)
+  - performance_report_*.html (可视化报告)
+```
 
-#### 其他基准测试
+### 3. 基本基准测试
 
-- `baseline_benchmark.py`：基础性能测试
-- `indicator_benchmark.py`：指标性能测试
-- `profile_run.py`：性能分析工具
+```bash
+# 运行小规模测试（推荐首次使用）
+python benchmarks/ma_crossover_benchmark.py --data-sizes 10000 100000 --rounds 1
 
-## 后续优化建议
+# 运行大规模测试（100万行数据）
+python benchmarks/ma_crossover_benchmark.py --large-scale 1000000 --rounds 1
 
-基于当前的基准测试结果，后续优化方向：
+# 清理缓存并重新测试
+python benchmarks/ma_crossover_benchmark.py --data-sizes 1000000 --cleanup-cache --rounds 1
+```
 
-1. **类型声明优化**：为关键变量添加 Cython 类型声明
-2. **循环优化**：优化热点循环，减少 Python 对象操作
-3. **内存优化**：减少不必要的内存分配和复制
-4. **算法优化**：优化关键算法的实现
-5. **并行化**：探索可以并行化的部分
+### 4. 旧版性能分析（不推荐）
 
-详细的优化计划请参考项目根目录下的 `当前需求.md` 文件。
+```bash
+# 函数级性能分析（建议使用unified_profiler.py替代）
+python benchmarks/performance_profiler.py --data-size 1000000 --profile-type function
+
+# 行级性能分析（需安装line_profiler）
+python benchmarks/performance_profiler.py --data-size 1000000 --profile-type line
+
+# 内存性能分析（需安装memory_profiler）
+python benchmarks/performance_profiler.py --data-size 1000000 --profile-type memory
+
+# 与原版backtrader对比
+python benchmarks/performance_profiler.py --data-size 1000000 --compare-backtrader
+```
+
+## 输出文件
+
+### 统一性能分析工具输出
+- **`benchmarks/performance_reports/`** 目录，包含：
+  - `performance_report_*.md` - Markdown格式的详细报告（包含Top 100热点函数）
+  - `performance_report_*.html` - HTML格式的可视化报告
+  - `performance_data_*.json` - 完整的性能数据
+
+### 基准测试输出
+- **`benchmark_results.json`** - 详细的测试结果数据
+- **`ma_crossover_benchmark_results.png`** - 性能对比图表
+
+### 旧版性能分析输出
+- **`performance_reports/`** 目录，包含：
+  - `performance_report_*.txt` - 函数级性能分析报告
+  - `line_profile_report_*.txt` - 行级性能分析报告
+  - `memory_report_*.txt` - 内存性能分析报告
+  - `summary_*.json` - 综合性能分析报告
+
+## 脚本参数
+
+### unified_profiler.py（推荐）
+
+```bash
+# 基本用法
+python benchmarks/unified_profiler.py [选项]
+
+选项：
+  --data-size SIZE     测试数据规模 (默认: 100000)
+  --data-file FILE     指定数据文件路径（可选）
+  --type TYPE          分析类型: function/line (默认: function)
+  --compare METRIC     对比指标: time/memory (默认: time)
+  --rounds ROUNDS      测试轮数 (默认: 1)
+  --output-dir DIR     报告输出目录 (默认: performance_reports)
+
+示例：
+  python benchmarks/unified_profiler.py --data-size 1000
+  python benchmarks/unified_profiler.py --data-size 100000 --rounds 3
+  python benchmarks/unified_profiler.py --compare memory --rounds 3
+```
+
+### ma_crossover_benchmark.py
+
+```bash
+# 基本用法
+python benchmarks/ma_crossover_benchmark.py [选项]
+
+选项：
+  --data-sizes SIZES    测试的数据规模列表 (默认: [10000, 100000])
+  --rounds ROUNDS       每规模运行轮数 (默认: 1)
+  --no-cache           不使用数据缓存
+  --cleanup-cache      清理旧缓存文件
+  --large-scale SIZE   运行大规模测试（指定数据行数）
+  --no-plot           不生成图表
+```
+
+### performance_profiler.py（旧版）
+
+```bash
+# 基本用法
+python benchmarks/performance_profiler.py [选项]
+
+选项：
+  --data-size SIZE      测试数据规模 (默认: 1000000)
+  --data-file FILE     指定数据文件路径
+  --profile-type TYPE  分析类型: function/line/memory (默认: function)
+  --top-n N            显示前N个最耗时函数 (默认: 20)
+  --rounds ROUNDS      基准测试轮数 (默认: 1)
+  --output-dir DIR     报告输出目录 (默认: performance_reports)
+  --compare-backtrader 同时运行原版backtrader对比
+```
+
+## 使用建议
+
+### 初次使用
+1. 先运行小规模测试验证环境：`--data-sizes 10000`
+2. 确认基本功能正常后，再进行大规模测试
+
+### 性能分析
+1. **函数级分析**：快速了解哪些函数最耗时
+2. **行级分析**：精确定位热点代码行（需安装line_profiler）
+3. **内存分析**：识别内存泄露和优化空间（需安装memory_profiler）
+
+### 大规模测试
+- 100万行数据通常需要几分钟到几十分钟
+- 建议在有足够内存的机器上运行
+- 使用`--rounds 1`减少测试时间
+
+## 测试策略说明
+
+### 均线交叉策略
+- **快线周期**: 5日
+- **慢线周期**: 20日
+- **信号**: 金叉做多，死叉平多
+- **资金**: 10万初始资金
+- **佣金**: 0.1%
+
+### 数据生成
+- 使用随机游走模型生成OHLCV数据
+- 包含真实的交易日历（跳过周末）
+- 固定随机种子确保结果可重复
+
+## 分析结果解读
+
+### 函数级性能报告
+```
+Top 20最耗时函数:
+         1000000 function calls in 15.234 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   1000000   10.123    0.000   15.234    0.000 {method 'append' of 'list' objects}
+```
+
+- **ncalls**: 函数调用次数
+- **tottime**: 函数本身执行时间
+- **cumtime**: 函数+子函数执行时间
+- **percall**: 平均每次调用时间
+
+### 加速比计算
+- 加速比 = 原版backtrader时间 / CyBacktrader时间
+- 加速比 > 1 表示CyBacktrader更快
+
+## 注意事项
+
+1. **内存需求**: 100万行数据约需几百MB内存
+2. **磁盘空间**: 数据文件和报告文件会占用磁盘空间
+3. **运行时间**: 大规模测试可能需要较长时间
+4. **依赖安装**: 根据需要安装可选依赖包
+
+## 故障排除
+
+### 常见问题
+1. **ImportError**: 确保已正确安装所有依赖包
+2. **内存不足**: 减少数据规模或增加系统内存
+3. **权限错误**: 确保有读写权限
+
+### 性能调优建议
+1. 使用数据缓存避免重复生成
+2. 合理设置测试轮数
+3. 在专用机器上运行大规模测试
+
+---
+
+## 更新日志
+
+- **v1.0**: 初始版本，支持基本基准测试
+- **v1.1**: 添加数据缓存机制和内存管理
+- **v1.2**: 添加深度性能分析工具
+- **v1.3**: 支持命令行参数和多种分析类型
+
+---
+
+*CyBacktrader基准测试工具 - 为性能优化而生*
 

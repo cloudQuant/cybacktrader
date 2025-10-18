@@ -91,3 +91,5 @@ ordered_compile.log
 # Temporary files
 *.tmp
 *.bak
+
+benchmarks/performance_reports/

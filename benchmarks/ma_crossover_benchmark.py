@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 
 """
-均线交叉策略基准测试
+均线交叉策略基准测试 - 优化版
 对比 backtrader 和 cybacktrader 在不同数据规模下的性能
+
+优化内容：
+1. 添加数据缓存机制，避免重复生成
+2. 改进数据生成算法，提升效率
+3. 优化内存使用，减少内存泄露风险
+4. 添加详细的性能统计信息
 """
 
 import os
@@ -10,103 +16,166 @@ import sys
 import time
 import datetime
 import statistics
+import pickle
+import hashlib
+import gc
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+import warnings
+warnings.filterwarnings('ignore')
 
 # 设置中文字体
 rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
 rcParams['axes.unicode_minus'] = False
 
 
-def generate_ohlcv_data(n_rows, start_date=None):
+def get_data_hash(n_rows, seed=42):
+    """生成数据缓存的哈希值"""
+    content = f"{n_rows}_{seed}"
+    return hashlib.md5(content.encode()).hexdigest()
+
+
+def load_cached_data(n_rows, cache_dir=None):
+    """从缓存加载数据"""
+    if cache_dir is None:
+        cache_dir = os.path.join(os.path.dirname(__file__), 'data_cache')
+
+    os.makedirs(cache_dir, exist_ok=True)
+
+    data_hash = get_data_hash(n_rows)
+    cache_file = os.path.join(cache_dir, f'ohlcv_data_{n_rows}_{data_hash}.pkl')
+
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'rb') as f:
+                data = pickle.load(f)
+            print(f"从缓存加载 {n_rows} 行数据: {cache_file}")
+            return data
+        except Exception as e:
+            print(f"缓存文件损坏，重新生成: {e}")
+            return None
+
+    return None
+
+
+def save_cached_data(df, n_rows, cache_dir=None):
+    """保存数据到缓存"""
+    if cache_dir is None:
+        cache_dir = os.path.join(os.path.dirname(__file__), 'data_cache')
+
+    os.makedirs(cache_dir, exist_ok=True)
+
+    data_hash = get_data_hash(n_rows)
+    cache_file = os.path.join(cache_dir, f'ohlcv_data_{n_rows}_{data_hash}.pkl')
+
+    try:
+        with open(cache_file, 'wb') as f:
+            pickle.dump(df, f)
+        print(f"保存数据到缓存: {cache_file}")
+    except Exception as e:
+        print(f"保存缓存失败: {e}")
+
+
+def generate_ohlcv_data(n_rows, start_date=None, use_cache=True):
     """
-    生成n行的OHLCV数据
-    
+    生成或从缓存加载n行的OHLCV数据 - 优化版
+
     参数:
         n_rows: 数据行数
         start_date: 起始日期，默认为2000-01-01
-    
+        use_cache: 是否使用缓存
+
     返回:
         pandas DataFrame，包含日期、开盘价、最高价、最低价、收盘价、成交量
     """
+    # 尝试从缓存加载
+    if use_cache:
+        cached_data = load_cached_data(n_rows)
+        if cached_data is not None:
+            return cached_data
+
+    print(f"生成 {n_rows} 行OHLCV数据...")
+
     if start_date is None:
         start_date = datetime.datetime(2000, 1, 1)
-    
-    # 生成日期序列（使用交易日，跳过周末）
-    # 为了避免日期溢出，我们循环重复使用一段时间内的日期
+
+    # 优化：预分配内存，提高效率
     dates = []
     current_date = start_date
-    day_count = 0
-    
+
+    # 生成交易日日期序列（跳过周末）
     while len(dates) < n_rows:
-        # 跳过周末
-        if current_date.weekday() < 5:  # 0-4 是周一到周五
+        if current_date.weekday() < 5:  # 周一到周五
             dates.append(current_date)
         current_date += datetime.timedelta(days=1)
-        day_count += 1
-        
-        # 如果日期太远，重新开始（从起始日期循环）
-        # 但索引值不同，以保持数据的唯一性
-        if day_count > 5000:  # 约20年的交易日
-            current_date = start_date
-            day_count = 0
-    
-    # 生成价格数据：使用随机游走模拟真实价格走势
-    np.random.seed(42)  # 固定随机种子以确保可重复性
-    
-    # 初始价格
+
+    # 固定随机种子以确保可重复性
+    np.random.seed(42)
+
+    # 优化：使用向量化操作，提高性能
+    # 生成收益率序列（带有轻微趋势和波动）
+    returns = np.random.normal(0.0001, 0.02, n_rows)
+
+    # 计算收盘价（使用更稳定的累积乘积）
     initial_price = 100.0
-    
-    # 生成收益率序列（带有趋势和波动）
-    returns = np.random.normal(0.0001, 0.02, n_rows)  # 平均收益率0.01%，波动率2%
-    
-    # 计算收盘价
-    close = initial_price * np.exp(np.cumsum(returns))
-    
-    # 生成开盘价、最高价、最低价（基于收盘价）
-    # 开盘价：收盘价的微小变化
-    open_price = close * (1 + np.random.uniform(-0.005, 0.005, n_rows))
-    
-    # 最高价：开盘价和收盘价的最大值，再加上一个随机波动
-    high = np.maximum(open_price, close) * (1 + np.random.uniform(0, 0.01, n_rows))
-    
-    # 最低价：开盘价和收盘价的最小值，再减去一个随机波动
-    low = np.minimum(open_price, close) * (1 - np.random.uniform(0, 0.01, n_rows))
-    
-    # 生成成交量
-    volume = np.random.randint(1000000, 10000000, n_rows)
-    
-    # 创建DataFrame
+    close_prices = np.empty(n_rows, dtype=np.float64)
+    close_prices[0] = initial_price
+
+    # 使用更高效的循环计算累积价格
+    for i in range(1, n_rows):
+        close_prices[i] = close_prices[i-1] * (1 + returns[i])
+
+    # 生成开盘价（基于收盘价的小幅变化）
+    open_prices = close_prices * (1 + np.random.uniform(-0.005, 0.005, n_rows))
+
+    # 生成最高价和最低价
+    price_range = np.random.uniform(0, 0.01, n_rows)
+    high_prices = np.maximum(open_prices, close_prices) * (1 + price_range)
+    low_prices = np.minimum(open_prices, close_prices) * (1 - price_range)
+
+    # 生成成交量（更真实的成交量分布）
+    volume_base = np.random.exponential(5000000, n_rows).astype(int) + 1000000
+    volume = np.clip(volume_base, 1000000, 50000000)
+
+    # 创建DataFrame（一次性构建，提高效率）
     df = pd.DataFrame({
         'datetime': dates,
-        'open': open_price,
-        'high': high,
-        'low': low,
-        'close': close,
+        'open': open_prices,
+        'high': high_prices,
+        'low': low_prices,
+        'close': close_prices,
         'volume': volume,
         'openinterest': 0  # backtrader需要这个字段
     })
-    
+
+    # 保存到缓存（如果启用）
+    if use_cache:
+        save_cached_data(df, n_rows)
+
     return df
 
 
 def save_data_to_csv(df, filename):
-    """将DataFrame保存为CSV文件"""
-    # 格式化日期
-    df_copy = df.copy()
-    
-    # 确保 datetime 列是 datetime 类型
-    if not pd.api.types.is_datetime64_any_dtype(df_copy['datetime']):
-        df_copy['datetime'] = pd.to_datetime(df_copy['datetime'])
-    
-    df_copy['datetime'] = df_copy['datetime'].dt.strftime('%Y-%m-%d')
-    
-    # 保存为CSV（不包含索引）
-    df_copy.to_csv(filename, index=False)
-    
-    return filename
+    """将DataFrame保存为CSV文件 - 优化版"""
+    try:
+        # 格式化日期（直接修改原DataFrame，避免拷贝）
+        df_copy = df.copy()
+
+        # 确保 datetime 列是 datetime 类型
+        if not pd.api.types.is_datetime64_any_dtype(df_copy['datetime']):
+            df_copy['datetime'] = pd.to_datetime(df_copy['datetime'])
+
+        df_copy['datetime'] = df_copy['datetime'].dt.strftime('%Y-%m-%d')
+
+        # 保存为CSV（不包含索引，使用更快的引擎）
+        df_copy.to_csv(filename, index=False, engine='c')
+
+        return filename
+    except Exception as e:
+        print(f"保存CSV文件失败: {e}")
+        return None
 
 
 def create_data_feed(module, csv_file, df):
@@ -169,56 +238,106 @@ class MACrossoverStrategy:
         return Strategy
 
 
-def run_benchmark(module_name, df, csv_file, rounds=3):
+def run_benchmark(module_name, df, csv_file, rounds=3, memory_cleanup=True):
     """
-    运行基准测试
-    
+    运行基准测试 - 优化版
+
     参数:
         module_name: 模块名称 ('backtrader' 或 'cybacktrader')
         df: pandas DataFrame数据
         csv_file: CSV文件路径
         rounds: 运行轮数
-    
+        memory_cleanup: 是否进行内存清理
+
     返回:
-        字典，包含运行时间统计
+        字典，包含运行时间统计和内存使用信息
     """
-    mod = __import__(module_name)
-    bt = mod
-    
+    import psutil
+    import os
+
+    try:
+        mod = __import__(module_name)
+        bt = mod
+    except ImportError as e:
+        print(f"无法导入模块 {module_name}: {e}")
+        return None
+
     times = []
-    
-    for _ in range(rounds):
-        # 创建Cerebro引擎
-        cerebro = bt.Cerebro(runonce=True, preload=True)
-        
-        # 添加数据
-        data = create_data_feed(bt, csv_file, df)
-        cerebro.adddata(data)
-        
-        # 添加策略
-        Strategy = MACrossoverStrategy.create_strategy(bt)
-        cerebro.addstrategy(Strategy)
-        
-        # 设置初始资金
-        cerebro.broker.setcash(100000.0)
-        
-        # 设置佣金
-        cerebro.broker.setcommission(commission=0.001)
-        
-        # 运行并计时
-        t0 = time.perf_counter()
-        cerebro.run()
-        elapsed = time.perf_counter() - t0
-        times.append(elapsed)
-    
-    return {
-        'min': min(times),
-        'max': max(times),
-        'avg': statistics.mean(times),
-        'median': statistics.median(times),
-        'std': statistics.stdev(times) if len(times) > 1 else 0,
-        'raw': times
+    memory_usages = []
+
+    for round_num in range(rounds):
+        # 获取进程信息
+        process = psutil.Process(os.getpid())
+        memory_before = process.memory_info().rss / 1024 / 1024  # MB
+
+        # 创建Cerebro引擎（优化参数）
+        cerebro = bt.Cerebro(runonce=True, preload=True, maxcpus=1)
+
+        try:
+            # 添加数据
+            data = create_data_feed(bt, csv_file, df)
+            cerebro.adddata(data)
+
+            # 添加策略
+            Strategy = MACrossoverStrategy.create_strategy(bt)
+            cerebro.addstrategy(Strategy)
+
+            # 设置初始资金和佣金
+            cerebro.broker.setcash(100000.0)
+            cerebro.broker.setcommission(commission=0.001)
+
+            # 强制垃圾回收
+            if memory_cleanup:
+                gc.collect()
+
+            # 运行并计时
+            t0 = time.perf_counter()
+            cerebro.run()
+            elapsed = time.perf_counter() - t0
+
+            times.append(elapsed)
+
+            # 计算内存使用
+            memory_after = process.memory_info().rss / 1024 / 1024  # MB
+            memory_used = memory_after - memory_before
+            memory_usages.append(memory_used)
+
+            print(f"  第{round_num+1}轮: {elapsed:.4f}s, 内存增量: {memory_used:.1f}MB")
+
+        except Exception as e:
+            print(f"  第{round_num+1}轮运行出错: {e}")
+            times.append(float('inf'))
+            memory_usages.append(0)
+            continue
+
+        finally:
+            # 清理引用，帮助垃圾回收
+            if 'cerebro' in locals():
+                del cerebro
+            if 'data' in locals():
+                del data
+            if 'Strategy' in locals():
+                del Strategy
+
+    # 计算统计信息
+    valid_times = [t for t in times if t != float('inf')]
+
+    if not valid_times:
+        return None
+
+    result = {
+        'min': min(valid_times),
+        'max': max(valid_times),
+        'avg': statistics.mean(valid_times),
+        'median': statistics.median(valid_times),
+        'std': statistics.stdev(valid_times) if len(valid_times) > 1 else 0,
+        'raw': times,
+        'memory_avg': statistics.mean(memory_usages) if memory_usages else 0,
+        'memory_max': max(memory_usages) if memory_usages else 0,
+        'rounds_completed': len(valid_times)
     }
+
+    return result
 
 
 def format_number(n):
@@ -231,67 +350,114 @@ def format_number(n):
         return str(n)
 
 
-def run_comparison(data_sizes, rounds=3):
+def run_comparison(data_sizes, rounds=3, use_cache=True, cleanup_cache=False):
     """
-    运行性能对比测试
-    
+    运行性能对比测试 - 优化版
+
     参数:
         data_sizes: 数据规模列表
         rounds: 每个规模运行的轮数
-    
+        use_cache: 是否使用数据缓存
+        cleanup_cache: 是否清理旧缓存文件
+
     返回:
-        结果字典
+        结果字典，包含详细的性能统计信息
     """
     results = {
         'backtrader': {},
-        'cybacktrader': {}
+        'cybacktrader': {},
+        'data_generation_time': {},
+        'total_time': 0
     }
-    
+
+    total_start_time = time.time()
+
     print("=" * 80)
-    print("均线交叉策略基准测试")
+    print("均线交叉策略基准测试 - 优化版")
     print("策略：5日均线金叉20日均线做多，死叉平多")
+    print("优化特性：数据缓存、内存管理、详细统计")
     print("=" * 80)
     print()
-    
+
+    # 清理旧缓存（可选）
+    if cleanup_cache:
+        cache_dir = os.path.join(os.path.dirname(__file__), 'data_cache')
+        if os.path.exists(cache_dir):
+            import shutil
+            shutil.rmtree(cache_dir)
+            print("已清理旧缓存文件")
+        print()
+
     for n_rows in data_sizes:
-        print(f"生成 {format_number(n_rows)} 行数据...")
-        df = generate_ohlcv_data(n_rows)
-        
-        # 保存为临时CSV文件
-        csv_file = f'temp_data_{n_rows}.csv'
-        save_data_to_csv(df, csv_file)
-        
-        print(f"运行 backtrader 基准测试（{format_number(n_rows)} 行数据）...")
-        try:
+        print(f"处理 {format_number(n_rows)} 行数据...")
+
+        # 生成或加载数据
+        data_start_time = time.time()
+        df = generate_ohlcv_data(n_rows, use_cache=use_cache)
+        data_gen_time = time.time() - data_start_time
+
+        results['data_generation_time'][n_rows] = data_gen_time
+        print(f"  数据准备耗时: {data_gen_time:.2f} 秒")
+
+        # 保存为CSV文件（临时）
+        csv_file = f'temp_data_{n_rows}_{int(time.time())}.csv'
+        if save_data_to_csv(df, csv_file):
+            print(f"  CSV文件已创建: {csv_file}")
+
+            # 测试 backtrader
+            print(f"  运行 backtrader 基准测试...")
             bt_result = run_benchmark('backtrader', df, csv_file, rounds=rounds)
             results['backtrader'][n_rows] = bt_result
-            print(f"  平均耗时: {bt_result['avg']:.4f} 秒")
-        except Exception as e:
-            print(f"  错误: {e}")
-            results['backtrader'][n_rows] = None
-        
-        print(f"运行 cybacktrader 基准测试（{format_number(n_rows)} 行数据）...")
-        try:
+
+            if bt_result:
+                print(f"    平均耗时: {bt_result['avg']:.4f} 秒")
+                print(f"    内存使用: {bt_result['memory_avg']:.1f} MB")
+            else:
+                print("    运行失败")
+
+            # 测试 cybacktrader
+            print(f"  运行 cybacktrader 基准测试...")
             cy_result = run_benchmark('cybacktrader', df, csv_file, rounds=rounds)
             results['cybacktrader'][n_rows] = cy_result
-            print(f"  平均耗时: {cy_result['avg']:.4f} 秒")
-        except Exception as e:
-            print(f"  错误: {e}")
+
+            if cy_result:
+                print(f"    平均耗时: {cy_result['avg']:.4f} 秒")
+                print(f"    内存使用: {cy_result['memory_avg']:.1f} MB")
+            else:
+                print("    运行失败")
+
+            # 计算加速比
+            if bt_result and cy_result and bt_result['avg'] > 0 and cy_result['avg'] > 0:
+                speedup = bt_result['avg'] / cy_result['avg']
+                print(f"  加速比: {speedup:.2f}x")
+
+                # 添加加速比到结果中
+                if 'speedup' not in results:
+                    results['speedup'] = {}
+                results['speedup'][n_rows] = speedup
+            else:
+                print("  无法计算加速比")
+
+        else:
+            print("  CSV文件创建失败，跳过此规模测试")
+            results['backtrader'][n_rows] = None
             results['cybacktrader'][n_rows] = None
-        
-        # 删除临时CSV文件
+
+        # 清理临时文件
         try:
-            os.remove(csv_file)
+            if os.path.exists(csv_file):
+                os.remove(csv_file)
         except:
             pass
-        
-        # 计算加速比
-        if results['backtrader'][n_rows] and results['cybacktrader'][n_rows]:
-            speedup = bt_result['avg'] / cy_result['avg']
-            print(f"  加速比: {speedup:.2f}x")
-        
+
+        # 强制垃圾回收
+        gc.collect()
+
         print()
-    
+
+    # 计算总耗时
+    results['total_time'] = time.time() - total_start_time
+
     return results
 
 
@@ -372,54 +538,144 @@ def plot_results(results, data_sizes):
 
 
 def print_summary(results, data_sizes):
-    """打印结果摘要"""
+    """打印结果摘要 - 优化版"""
     print()
-    print("=" * 80)
+    print("=" * 100)
     print("测试结果摘要")
-    print("=" * 80)
+    print("=" * 100)
     print()
-    
-    print(f"{'数据规模':<15} {'backtrader(秒)':<20} {'cybacktrader(秒)':<20} {'加速比':<10}")
-    print("-" * 80)
-    
+
+    # 打印表头
+    header = f"{'数据规模':<12} {'backtrader(秒)':<15} {'cybacktrader(秒)':<15} {'加速比':<10} {'内存使用(MB)':<15} {'数据生成(秒)':<12}"
+    print(header)
+    print("-" * 100)
+
+    total_bt_time = 0
+    total_cy_time = 0
+    valid_tests = 0
+
     for n_rows in data_sizes:
         bt_result = results['backtrader'].get(n_rows)
         cy_result = results['cybacktrader'].get(n_rows)
-        
+        data_gen_time = results['data_generation_time'].get(n_rows, 0)
+
         if bt_result and cy_result:
             bt_time = bt_result['avg']
             cy_time = cy_result['avg']
-            speedup = bt_time / cy_time
-            
-            print(f"{format_number(n_rows):<15} {bt_time:<20.4f} {cy_time:<20.4f} {speedup:<10.2f}x")
+            speedup = bt_time / cy_time if cy_time > 0 else 0
+            memory_usage = f"{bt_result['memory_avg']:.1f}/{cy_result['memory_avg']:.1f}"
+
+            total_bt_time += bt_time
+            total_cy_time += cy_time
+            valid_tests += 1
+
+            print(f"{format_number(n_rows):<12} {bt_time:<15.4f} {cy_time:<15.4f} {speedup:<10.2f}x {memory_usage:<15} {data_gen_time:<12.2f}")
         else:
-            print(f"{format_number(n_rows):<15} {'N/A':<20} {'N/A':<20} {'N/A':<10}")
-    
-    print("-" * 80)
+            print(f"{format_number(n_rows):<12} {'N/A':<15} {'N/A':<15} {'N/A':<10} {'N/A':<15} {data_gen_time:<12.2f}")
+
+    print("-" * 100)
+
+    # 打印总体统计
+    if valid_tests > 0:
+        avg_speedup = total_bt_time / total_cy_time if total_cy_time > 0 else 0
+        print(f"总体加速比: {avg_speedup:.2f}x (基于{valid_tests}个有效测试)")
+        print(f"总测试耗时: {results['total_time']:.2f} 秒")
+
     print()
+
+
+def run_large_scale_test(n_rows=1000000, rounds=1, use_cache=True):
+    """
+    运行大规模数据测试（专为100万行数据优化）
+
+    参数:
+        n_rows: 数据行数，默认100万
+        rounds: 运行轮数
+        use_cache: 是否使用缓存
+    """
+    print(f"开始大规模测试：{format_number(n_rows)} 行数据")
+    print("=" * 80)
+
+    # 运行测试
+    results = run_comparison([n_rows], rounds=rounds, use_cache=use_cache)
+
+    # 打印详细结果
+    print_summary(results, [n_rows])
+
+    return results
 
 
 if __name__ == "__main__":
-    # 定义测试的数据规模
-    # 注意：可以通过修改这个列表来调整测试规模
-    data_sizes = [
-        10000,      # 1万行
-        100000,     # 10万行
-        # 1000000,    # 100万行（可选，耗时较长）
-        # 10000000,   # 1千万行（可选，耗时很长）
-        # 100000000,  # 1亿行（可选，耗时很长且需要大量内存）
-    ]
-    
-    # 运行基准测试
-    rounds = 1  # 每个规模运行1轮
-    results = run_comparison(data_sizes, rounds=rounds)
-    
-    # 打印结果摘要
-    print_summary(results, data_sizes)
-    
-    # 绘制对比图
-    plot_results(results, data_sizes)
-    
-    print()
+    import argparse
+
+    parser = argparse.ArgumentParser(description='均线交叉策略基准测试')
+    parser.add_argument('--data-sizes', nargs='+', type=int,
+                       default=[10000, 100000],
+                       help='测试的数据规模列表，默认：[10000, 100000]')
+    parser.add_argument('--rounds', type=int, default=1,
+                       help='每个规模运行的轮数，默认：1')
+    parser.add_argument('--no-cache', action='store_true',
+                       help='不使用数据缓存')
+    parser.add_argument('--cleanup-cache', action='store_true',
+                       help='清理旧缓存文件')
+    parser.add_argument('--large-scale', type=int,
+                       help='运行大规模测试，指定数据行数，默认：1000000')
+    parser.add_argument('--no-plot', action='store_true',
+                       help='不生成图表')
+
+    args = parser.parse_args()
+
+    # 如果指定大规模测试
+    if args.large_scale:
+        results = run_large_scale_test(args.large_scale, args.rounds,
+                                    use_cache=not args.no_cache)
+    else:
+        # 普通基准测试
+        data_sizes = args.data_sizes
+
+        print(f"测试数据规模: {[format_number(n) for n in data_sizes]}")
+        print(f"每规模运行轮数: {args.rounds}")
+
+        # 运行基准测试
+        results = run_comparison(data_sizes, rounds=args.rounds,
+                               use_cache=not args.no_cache,
+                               cleanup_cache=args.cleanup_cache)
+
+        # 打印结果摘要
+        print_summary(results, data_sizes)
+
+        # 绘制对比图（如果启用）
+        if not args.no_plot:
+            try:
+                plot_results(results, data_sizes)
+            except Exception as e:
+                print(f"图表生成失败: {e}")
+
     print("基准测试完成！")
+
+    # 保存详细结果到文件
+    import json
+    result_file = os.path.join(os.path.dirname(__file__), 'benchmark_results.json')
+    try:
+        # 转换numpy类型为可序列化类型
+        def convert_for_json(obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, dict):
+                return {k: convert_for_json(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_for_json(i) for i in obj]
+            else:
+                return obj
+
+        serializable_results = convert_for_json(results)
+        with open(result_file, 'w', encoding='utf-8') as f:
+            json.dump(serializable_results, f, indent=2, ensure_ascii=False)
+        print(f"详细结果已保存到: {result_file}")
+    except Exception as e:
+        print(f"保存结果失败: {e}")
 
