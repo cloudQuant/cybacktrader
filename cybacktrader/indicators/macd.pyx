@@ -73,3 +73,13 @@ class MACDHisto(MACD):
     def __init__(self):
         super(MACDHisto, self).__init__()
         self.lines.histo = self.lines.macd - self.lines.signal
+
+    def once(self, start, end):
+        # Cython深度优化：histo = macd - signal
+        cdef int i, s = start, e = end
+        cdef double[:] dst = self.lines.histo.array
+        cdef double[:] macd = self.lines.macd.array
+        cdef double[:] sig = self.lines.signal.array
+        with nogil:
+            for i in range(s, e):
+                dst[i] = macd[i] - sig[i]

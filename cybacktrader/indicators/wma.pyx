@@ -45,3 +45,8 @@ class WeightedMovingAverage(MovingAverageBase):
             coef=coef, weights=weights)
 
         super(WeightedMovingAverage, self).__init__()
+
+    def once(self, start, end):
+        # Cython深度优化：wma uses WeightedAverage which already optimized in basicops
+        # No additional once override needed; rely on WeightedAverage.once
+        pass
