@@ -14,6 +14,9 @@
 
 from copy import copy
 
+# Cython imports for C-level optimization
+cimport cython
+
 # Position类，保持和更新持仓的大小和价格，和其他的任何资产没有关系，它仅仅保存大小和价格
 class Position(object):
     """
@@ -42,27 +45,39 @@ class Position(object):
         items.append('--- Position End')
         return '\n'.join(items)
 
-    # 根据size和price的不同进行初始化
+    # 根据size和price的不同进行初始化 - Cython深度优化
+    @cython.cdivision(True)
     def __init__(self, size=0, price=0.0):
-        self.size = size
-        if size:
-            self.price = self.price_orig = price
+        cdef long init_size = size
+        cdef double init_price = price
+        
+        self.size = init_size
+        if init_size:
+            self.price = self.price_orig = init_price
         else:
             self.price = 0.0
 
         self.adjbase = None
 
-        self.upopened = size
+        self.upopened = init_size
         self.upclosed = 0
-        self.set(size, price)
+        self.set(init_size, init_price)
 
         self.updt = None
 
-    # 修改position的size和price
+    # 修改position的size和price - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def fix(self, size, price):
+        cdef long oldsize, new_size
+        cdef double new_price
+        
         oldsize = self.size
-        self.size = size
-        self.price = price
+        new_size = size
+        new_price = price
+        
+        self.size = new_size
+        self.price = new_price
         return self.size == oldsize
     # 设置position的size和price
     def set(self, size, price):
@@ -115,20 +130,26 @@ class Position(object):
         self.upclosed = upclosed
 
         return self.size, self.price, self.upopened, self.upclosed
-    # 调用len(position)的时候，返回持仓的绝对值
+    # 调用len(position)的时候，返回持仓的绝对值 - Cython深度优化
+    @cython.final
     def __len__(self):
-        return abs(self.size)
-    # 调用bool(position)判断当前size是否等于0
+        cdef long size_val = self.size
+        return abs(size_val)
+    
+    # 调用bool(position)判断当前size是否等于0 - Cython深度优化
+    @cython.final
     def __bool__(self):
-        return bool(self.size != 0)
+        return self.size != 0
 
     __nonzero__ = __bool__
 
-    # 克隆持仓信息
+    # 克隆持仓信息 - Cython深度优化
+    @cython.final
     def clone(self):
         return Position(size=self.size, price=self.price)
 
-    # 创建一个position实例，然后更新size和价格
+    # 创建一个position实例，然后更新size和价格 - Cython深度优化
+    @cython.final
     def pseudoupdate(self, size, price):
         return Position(self.size, self.price).update(size, price)
 
