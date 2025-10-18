@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython深度性能优化标记
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
 # cython: boundscheck=False
 # cython: wraparound=False
 # cython: cdivision=True
+# cython: nonecheck=False
 # cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 import datetime as _datetime
 from datetime import datetime
@@ -70,33 +73,44 @@ class DataSeries(LineSeries):
     # dataseries中line的顺序
     LineOrder = [DateTime, Open, High, Low, Close, Volume, OpenInterest]
 
-    # 获取dataseries的header的变量名称， - Cython优化
+    # 获取dataseries的header的变量名称， - Cython深度优化
     def getwriterheaders(self):
         cdef int lo
+        cdef list headers
+        cdef object linealiases, morelines
+        
         headers = [self._name, 'len']
 
         for lo in self.LineOrder:
             headers.append(self._getlinealias(lo))
 
-        morelines = self.getlinealiases()[len(self.LineOrder):]
+        linealiases = self.getlinealiases()
+        morelines = linealiases[len(self.LineOrder):]
         headers.extend(morelines)
 
         return headers
 
-    # 获取values - Cython优化
+    # 获取values - Cython深度优化
     def getwritervalues(self):
-        cdef int l, line, i
+        cdef int l, line, i, lines_size, lineorder_len
+        cdef list values
+        
         l = len(self)
         values = [self._name, l]
 
         if l:
             values.append(self.datetime.datetime(0))
+            # 优化：缓存列表引用
             for line in self.LineOrder[1:]:
                 values.append(self.lines[line][0])
-            for i in range(len(self.LineOrder), self.lines.size()):
+            
+            lineorder_len = len(self.LineOrder)
+            lines_size = self.lines.size()
+            for i in range(lineorder_len, lines_size):
                 values.append(self.lines[i][0])
         else:
-            values.extend([''] * self.lines.size())  # no values yet
+            lines_size = self.lines.size()
+            values.extend([''] * lines_size)  # no values yet
 
         return values
 
@@ -191,31 +205,40 @@ class _Bar(AutoOrderedDict):
         Uses the fact that NaN is the value which is not equal to itself
         and ``open`` is initialized to NaN
         """
-        o = self.open
+        cdef double o = self.open
         return o == o  # False if NaN, True in other cases
 
     def bupdate(self, data, reopen=False):
-        # 更新具体的bar
-        """Updates a bar with the values from data
+        # 更新具体的bar - Cython深度优化
+        """更新一个bar的值
 
         Returns True if the update was the 1st on a bar (just opened)
 
         Returns False otherwise
         """
-        if reopen:
+        cdef double o, high_val, low_val
+        cdef bint is_reopen = reopen
+        
+        if is_reopen:
             self.bstart()
 
         self.datetime = data.datetime[0]
 
-        self.high = max(self.high, data.high[0])
-        self.low = min(self.low, data.low[0])
+        # 优化：缓存值减少属性访问
+        high_val = data.high[0]
+        low_val = data.low[0]
+        
+        if high_val > self.high:
+            self.high = high_val
+        if low_val < self.low:
+            self.low = low_val
+            
         self.close = data.close[0]
-
         self.volume += data.volume[0]
         self.openinterest = data.openinterest[0]
 
         o = self.open
-        if reopen or not o == o:
+        if is_reopen or not o == o:
             self.open = data.open[0]
             return True  # just opened the bar
 
