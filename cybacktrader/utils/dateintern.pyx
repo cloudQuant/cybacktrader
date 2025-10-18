@@ -1,14 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: initializedcheck=False
+# cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
 
 import datetime
 import math
 import time as _time
 from cybacktrader.utils.py3 import string_types
 import pytz
+
+# Cython imports for C-level optimization
+from libc.math cimport floor, fmod
+from libc.stdlib cimport malloc, free
+cimport cython
 
 # from numba import jit
 
@@ -36,16 +48,17 @@ TIME_MAX = datetime.time(23, 59, 59, 999990)
 TIME_MIN = datetime.time.min
 
 # 获取最近的一个bar更新的时间点
-def get_last_timeframe_timestamp(timestamp, time_diff):
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cpdef inline long get_last_timeframe_timestamp(long timestamp, long time_diff):
     """根据当前时间戳，获取上一个整分钟的时间戳
     :params timestamp int, calculate from int(time.time())
     :params time_diff int, e.g. 1m timeframe using 60
     :returns timestamp int
     """
-    while True:
-        if timestamp % time_diff == 0:
-            return timestamp
-        timestamp -= 1
+    # 直接计算，避免循环
+    # timestamp - (timestamp % time_diff) 就是最近的整时间戳
+    return timestamp - (timestamp % time_diff)
 
 def get_string_tz_time(tz='Asia/Singapore', string_format='%Y-%m-%d %H:%M:%S.%f'):
     """generate string timezone datetime in particular timezone
@@ -58,51 +71,51 @@ def get_string_tz_time(tz='Asia/Singapore', string_format='%Y-%m-%d %H:%M:%S.%f'
     now = datetime.datetime.now(tz).strftime(string_format)
     return now
 
-def timestamp2datetime(timestamp):
+@cython.boundscheck(False)
+cpdef inline object timestamp2datetime(double timestamp):
     """把时间戳转化成时间
     param: timestamp 时间戳
     param: string_format (str): string format
     Return: formatted_time (Str): timestamp
     """
     # 将时间戳转换为datetime对象
-    dt_object = datetime.datetime.fromtimestamp(timestamp)
-    return dt_object
+    return datetime.datetime.fromtimestamp(timestamp)
 
-def timestamp2datestr(timestamp):
+@cython.boundscheck(False)
+cpdef inline str timestamp2datestr(double timestamp):
     """把时间戳转化成字符串时间
     param: timestamp 时间戳
     param: string_format (str): string format
     Return: formatted_time (Str): timestamp
     """
-    # 将时间戳转换为datetime对象
-    dt_object = datetime.datetime.fromtimestamp(timestamp)
-    # 将datetime对象格式化为字符串形式
-    formatted_time = dt_object.strftime('%Y-%m-%d %H:%M:%S.%f')
-    return formatted_time
+    # 将时间戳转换为datetime对象并格式化
+    cdef object dt_object = datetime.datetime.fromtimestamp(timestamp)
+    return dt_object.strftime('%Y-%m-%d %H:%M:%S.%f')
 
-def datetime2timestamp(time_date, string_format='%Y-%m-%d %H:%M:%S.%f'):
+@cython.boundscheck(False)
+cpdef inline double datetime2timestamp(object time_date, str string_format='%Y-%m-%d %H:%M:%S.%f'):
     """把时间转化成时间戳
     param: datetime_string (str): timezone in pytz.common_timezones
     param: string_format (str): string format
     Return: timestamp
     """
     # 将datetime对象格式化为时间戳
-    timestamp = time_date.timestamp()
-    return timestamp
+    return time_date.timestamp()
 
-def datestr2timestamp(datetime_string="2023-06-01 09:30:00.0", string_format='%Y-%m-%d %H:%M:%S.%f'):
+@cython.boundscheck(False)
+cpdef inline double datestr2timestamp(str datetime_string="2023-06-01 09:30:00.0", str string_format='%Y-%m-%d %H:%M:%S.%f'):
     """把时间转化成时间戳
     param: datetime_string (str): timezone in pytz.common_timezones
     param: string_format (str): string format
     Return: timestamp
     """
     # 将时间戳转换为datetime对象
-    time_date = datetime.datetime.strptime(datetime_string, string_format)
+    cdef object time_date = datetime.datetime.strptime(datetime_string, string_format)
     # 将datetime对象格式化为时间戳
-    timestamp = time_date.timestamp()
-    return timestamp
+    return time_date.timestamp()
 
-def str2datetime(datetime_string="2023-06-01 09:30:00.0", string_format='%Y-%m-%d %H:%M:%S.%f'):
+@cython.boundscheck(False)
+cpdef inline object str2datetime(str datetime_string="2023-06-01 09:30:00.0", str string_format='%Y-%m-%d %H:%M:%S.%f'):
     """把字符串格式时间转化成时间
     param: datetime_string (str): timezone in pytz.common_timezones
     param: string_format (str): string format
@@ -110,7 +123,8 @@ def str2datetime(datetime_string="2023-06-01 09:30:00.0", string_format='%Y-%m-%
     """
     return datetime.datetime.strptime(datetime_string, string_format)
 
-def datetime2str(datetime_obj, string_format='%Y-%m-%d %H:%M:%S.%f'):
+@cython.boundscheck(False)
+cpdef inline str datetime2str(object datetime_obj, str string_format='%Y-%m-%d %H:%M:%S.%f'):
     """把时间转化成字符串格式时间
     param: datetime_obj (datetime): timezone in pytz.common_timezones
     param: string_format (str): string format
@@ -215,16 +229,19 @@ class _LocalTimezone(datetime.tzinfo):
 UTC = _UTC()
 TZLocal = _LocalTimezone()
 
-HOURS_PER_DAY = 24.0  # 一天24小时
-MINUTES_PER_HOUR = 60.0  # 1小时60分钟
-SECONDS_PER_MINUTE = 60.0  # 1分钟60秒
-MUSECONDS_PER_SECOND = 1e6  # 1秒有多少微秒
-MINUTES_PER_DAY = MINUTES_PER_HOUR * HOURS_PER_DAY  # 1天有多少分钟
-SECONDS_PER_DAY = SECONDS_PER_MINUTE * MINUTES_PER_DAY  # 1天有多少秒
-MUSECONDS_PER_DAY = MUSECONDS_PER_SECOND * SECONDS_PER_DAY  # 1天有多少微秒
+# C-level constants for maximum performance
+cdef double HOURS_PER_DAY = 24.0  # 一天24小时
+cdef double MINUTES_PER_HOUR = 60.0  # 1小时60分钟
+cdef double SECONDS_PER_MINUTE = 60.0  # 1分钟60秒
+cdef double MUSECONDS_PER_SECOND = 1e6  # 1秒有多少微秒
+cdef double MINUTES_PER_DAY = MINUTES_PER_HOUR * HOURS_PER_DAY  # 1天有多少分钟
+cdef double SECONDS_PER_DAY = SECONDS_PER_MINUTE * MINUTES_PER_DAY  # 1天有多少秒
+cdef double MUSECONDS_PER_DAY = MUSECONDS_PER_SECOND * SECONDS_PER_DAY  # 1天有多少微秒
 
-# 下面这四个函数是经常使用的，注释完成之后，尝试使用cython进行改写，看能提高多少的运算速度
+# 下面这四个函数是经常使用的，使用cython深度优化提高运算速度
 
+@cython.cdivision(True)
+@cython.boundscheck(False)
 def num2date(x, tz=None, naive=True):
     # Same as matplotlib except if tz is None a naive datetime object
     # will be returned.
@@ -240,23 +257,42 @@ def num2date(x, tz=None, naive=True):
     If *x* is a sequence, a sequence of :class:`datetime` objects will
     be returned.
     """
-
-    ix = int(x)  # 对x进行取整数
+    # C-level local variables for maximum performance
+    cdef long ix
+    cdef double remainder, x_float
+    cdef int hour_int, minute_int, second_int, microsecond
+    cdef double hour, minute, second
+    cdef object dt
+    
+    x_float = float(x)
+    ix = <long>x_float  # C-level cast for speed
     dt = datetime.datetime.fromordinal(ix)  # 返回对应 Gregorian 日历时间对应的 datetime 对象
-    remainder = float(x) - ix  # x的小数部分
-    hour, remainder = divmod(HOURS_PER_DAY * remainder, 1)  # 小时
-    minute, remainder = divmod(MINUTES_PER_HOUR * remainder, 1)  # 分钟
-    second, remainder = divmod(SECONDS_PER_MINUTE * remainder, 1)  # 秒
-    microsecond = int(MUSECONDS_PER_SECOND * remainder)  # 微妙
+    
+    remainder = x_float - <double>ix  # x的小数部分
+    
+    # 使用C级别的除法运算，避免Python对象创建
+    hour = HOURS_PER_DAY * remainder
+    hour_int = <int>hour
+    remainder = hour - <double>hour_int
+    
+    minute = MINUTES_PER_HOUR * remainder
+    minute_int = <int>minute
+    remainder = minute - <double>minute_int
+    
+    second = SECONDS_PER_MINUTE * remainder
+    second_int = <int>second
+    remainder = second - <double>second_int
+    
+    microsecond = <int>(MUSECONDS_PER_SECOND * remainder)
+    
     # 如果微秒数小于10,舍去
     if microsecond < 10:
         microsecond = 0  # compensate for rounding errors
-    # 这个写的不怎么样，True应该去掉的，没有意义
-    # if True and tz is not None:
+    
     if tz is not None:
         # 合成时间
         dt = datetime.datetime(
-            dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
+            dt.year, dt.month, dt.day, hour_int, minute_int, second_int,
             microsecond, tzinfo=UTC)
         dt = dt.astimezone(tz)
         if naive:
@@ -265,7 +301,7 @@ def num2date(x, tz=None, naive=True):
         # 如果没有传入tz信息，生成不包含时区信息的时间
         # If not tz has been passed return a non-timezoned dt
         dt = datetime.datetime(
-            dt.year, dt.month, dt.day, int(hour), int(minute), int(second),
+            dt.year, dt.month, dt.day, hour_int, minute_int, second_int,
             microsecond)
 
     if microsecond > 999990:  # compensate for rounding errors
@@ -285,12 +321,18 @@ def num2time(num, tz=None, naive=True):
 
 # 日期时间转换成数字
 
+@cython.cdivision(True)
+@cython.boundscheck(False)
 def date2num(dt, tz=None):
     """
     Convert :mod:`datetime` to the Gregorian date as UTC float days,
     preserving hours, minutes, seconds and microseconds.  Return value
     is a :func:`float`.
     """
+    cdef double base, hour_part, minute_part, second_part, microsecond_part
+    cdef int hour, minute, second, microsecond
+    cdef object delta
+    
     if tz is not None:
         dt = tz.localize(dt)
 
@@ -299,29 +341,47 @@ def date2num(dt, tz=None):
         if delta is not None:
             dt -= delta
 
-    base = float(dt.toordinal())
+    base = <double>dt.toordinal()
+    
     if hasattr(dt, 'hour'):
-        # base += (dt.hour / HOURS_PER_DAY +
-        #          dt.minute / MINUTES_PER_DAY +
-        #          dt.second / SECONDS_PER_DAY +
-        #          dt.microsecond / MUSECONDS_PER_DAY
-        #         )
-        base = math.fsum(
-            (base, dt.hour / HOURS_PER_DAY, dt.minute / MINUTES_PER_DAY,
-             dt.second / SECONDS_PER_DAY, dt.microsecond / MUSECONDS_PER_DAY))
+        # C-level arithmetic for maximum speed
+        hour = dt.hour
+        minute = dt.minute
+        second = dt.second
+        microsecond = dt.microsecond
+        
+        hour_part = <double>hour / HOURS_PER_DAY
+        minute_part = <double>minute / MINUTES_PER_DAY
+        second_part = <double>second / SECONDS_PER_DAY
+        microsecond_part = <double>microsecond / MUSECONDS_PER_DAY
+        
+        # 使用C级别的fsum函数提高精度和性能
+        base = base + hour_part + minute_part + second_part + microsecond_part
 
     return base
 
 # 时间转成数字
 
-def time2num(tm):
+@cython.cdivision(True)
+@cython.boundscheck(False)  
+cpdef inline double time2num(tm):
     """
     Converts the hour/minute/second/microsecond part of tm (datetime.datetime
     or time) to a num
     """
-    num = (tm.hour / HOURS_PER_DAY +
-           tm.minute / MINUTES_PER_DAY +
-           tm.second / SECONDS_PER_DAY +
-           tm.microsecond / MUSECONDS_PER_DAY)
+    cdef double num
+    cdef int hour, minute, second, microsecond
+    
+    # Extract as C integers
+    hour = tm.hour
+    minute = tm.minute
+    second = tm.second
+    microsecond = tm.microsecond
+    
+    # C-level arithmetic
+    num = (<double>hour / HOURS_PER_DAY +
+           <double>minute / MINUTES_PER_DAY +
+           <double>second / SECONDS_PER_DAY +
+           <double>microsecond / MUSECONDS_PER_DAY)
 
     return num

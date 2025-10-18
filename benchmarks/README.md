@@ -6,16 +6,16 @@
 
 ### ⭐ 统一性能分析工具（推荐）
 - **`unified_profiler.py`** - **最新的统一性能分析工具** ✅
-  - ✅ **已修复所有已知问题** (v1.3.0)
+  - ✅ **已修复所有已知问题** (v1.4.0)
   - 整合了函数级、行级、时间、内存等所有分析功能
   - **同时显示时间和内存数据** - 一次测试获得完整性能画像
+  - **支持无监控模式** - 纯时间测量，更准确的加速比 🆕
   - 自动生成Markdown和HTML双格式报告
   - 支持多轮测试取平均值
   - **显示Top 100热点函数**，全面识别优化目标（已验证）
   - 报告自动保存到 `benchmarks/performance_reports/` 目录
   - 详细的优化建议和热点函数识别
-  - **使用文档**: `CHANGELOG.md`
-  - **Bug修复记录**: `BUG_FIXES.md`
+  - **使用文档**: 见下方
 
 ## 文件说明
 
@@ -42,21 +42,39 @@ pip install line_profiler  # 可选，用于行级分析
 pip install backtrader     # 用于性能对比
 ```
 
-### 2. 🚀 使用统一性能分析工具（推荐）
+### 2. 🚀 使用统一性能分析工具（**推荐使用 `unified_profiler.py`**，它整合了所有功能：
 
 ```bash
-# 快速测试（1000行数据）
-python benchmarks/unified_profiler.py --data-size 1000
+# 1. 纯时间测量（无监控，更准确的加速比）- 推荐用于性能评估
+python benchmarks/unified_profiler.py --data-size 100000 --no-profiling --rounds 3
 
-# 正式分析（10万行，3轮测试）
+# 2. 带性能分析（有监控，可识别热点函数）- 推荐用于优化指导
 python benchmarks/unified_profiler.py --data-size 100000 --rounds 3
 
-# 内存对比
-python benchmarks/unified_profiler.py --compare memory --rounds 3
+# 3. 对比两种模式的差异
+python benchmarks/compare_profiling_modes.py
 
-# 查看详细使用说明
-# 阅读 benchmarks/UNIFIED_PROFILER.md
+# 4. 大规模测试（100万行数据）
+python benchmarks/unified_profiler.py --data-size 1000000 --no-profiling --rounds 1
+
+# 5. 内存对比
+python benchmarks/unified_profiler.py --compare memory --rounds 3
 ```
+
+**两种测试模式说明**：
+- `--no-profiling`: 无监控模式
+  - ✅ 纯时间测量，无cProfile/tracemalloc开销
+  - ✅ 更准确的加速比（~1.1-1.3x）
+  - ✅ 反映真实生产环境性能
+  - ❌ 无法识别热点函数
+  - 🎯 **用途**：性能评估、发布前基准测试
+
+- 默认模式（带性能分析）：
+  - ✅ 可识别Top 100热点函数
+  - ✅ 详细的函数级性能数据
+  - ✅ 函数对齐情况分析
+  - ❌ 有监控开销，加速比虚高（~1.5-2.0x）
+  - 🎯 **用途**：找出优化目标、开发中调优
 
 **测试结果示例**：
 ```

@@ -49,7 +49,7 @@ except ImportError:
 
 def create_test_dataset(n_rows=100000, data_file=None):
     """创建测试数据集"""
-    print(f"📊 创建 {n_rows:,} 行测试数据...")
+    print(f"[图表] 创建 {n_rows:,} 行测试数据...")
     
     import pandas as pd
     import numpy as np
@@ -95,7 +95,7 @@ def create_test_dataset(n_rows=100000, data_file=None):
     
     os.makedirs(os.path.dirname(data_file) if os.path.dirname(data_file) else '.', exist_ok=True)
     df.to_csv(data_file, index=False)
-    print(f"✅ 数据已保存: {data_file}")
+    print(f"[成功] 数据已保存: {data_file}")
     
     return data_file
 
@@ -111,7 +111,7 @@ def run_strategy_with_profiling(module_name, data_file, profile_type='function',
         else:
             raise ValueError(f"未知模块: {module_name}")
     except ImportError as e:
-        print(f"❌ 无法导入 {module_name}: {e}")
+        print(f"[失败] 无法导入 {module_name}: {e}")
         return None
     
     def run_strategy():
@@ -245,7 +245,7 @@ def run_strategy_with_profiling(module_name, data_file, profile_type='function',
             gc.collect()
     
     except Exception as e:
-        print(f"❌ {module_name} 执行失败: {e}")
+        print(f"[失败] {module_name} 执行失败: {e}")
     
     return result
 
@@ -295,7 +295,7 @@ def generate_markdown_report(comparison, output_file):
         f.write(f"**测试轮数**: {comparison['rounds']}\n\n")
         
         # 总体性能对比
-        f.write("## 📊 总体性能对比\n\n")
+        f.write("## [图表] 总体性能对比\n\n")
         
         bt_avg = comparison['backtrader']['avg_time']
         cy_avg = comparison['cybacktrader']['avg_time']
@@ -321,7 +321,7 @@ def generate_markdown_report(comparison, output_file):
         
         # 多轮测试详情
         if comparison['rounds'] > 1:
-            f.write("## 📈 多轮测试详情\n\n")
+            f.write("## [提升] 多轮测试详情\n\n")
             f.write("| 轮次 | Backtrader (s) | CyBacktrader (s) | 加速比 |\n")
             f.write("|------|----------------|------------------|--------|\n")
             
@@ -338,7 +338,7 @@ def generate_markdown_report(comparison, output_file):
         if 'function_comparison' in comparison:
             func_comp = comparison['function_comparison']
             
-            f.write("## 🔥 需要优化的热点函数 (Top 100)\n\n")
+            f.write("##  需要优化的热点函数 (Top 100)\n\n")
             f.write("以下函数在CyBacktrader中仍然耗时较多，建议进一步优化：\n\n")
             f.write("| 排名 | 函数名 | BT累积时间(s) | CY累积时间(s) | 改进(%) | 时间节省(s) | 文件 |\n")
             f.write("|------|--------|---------------|---------------|---------|-------------|------|\n")
@@ -353,14 +353,14 @@ def generate_markdown_report(comparison, output_file):
                 
                 improvement_str = f"{item['improvement']:+.1f}%"
                 if item['improvement'] > 0:
-                    improvement_str = f"✅ {improvement_str}"
+                    improvement_str = f"[成功] {improvement_str}"
                 elif item['improvement'] < -10:
-                    improvement_str = f"⚠️ {improvement_str}"
+                    improvement_str = f"[警告]️ {improvement_str}"
                 
                 f.write(f"| {idx} | `{func_name}` | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} | {improvement_str} | {item['time_saved']:.4f} | {filename} |\n")
             
             # 改进最大的函数
-            f.write("\n## ✅ 改进最显著的函数 (Top 20)\n\n")
+            f.write("\n## [成功] 改进最显著的函数 (Top 20)\n\n")
             improved = [c for c in func_comp if c['improvement'] > 0 and c['bt_cumtime'] > 0.001]
             improved.sort(key=lambda x: x['time_saved'], reverse=True)
             
@@ -371,35 +371,35 @@ def generate_markdown_report(comparison, output_file):
                 for idx, item in enumerate(improved[:20], 1):
                     func_name = item['function'][:50]
                     filename = item['filename']
-                    f.write(f"| {idx} | `{func_name}` | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} | ✅ {item['improvement']:+.1f}% | {item['time_saved']:.4f} | {filename} |\n")
+                    f.write(f"| {idx} | `{func_name}` | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} | [成功] {item['improvement']:+.1f}% | {item['time_saved']:.4f} | {filename} |\n")
             
             # 性能下降的函数
             regressed = [c for c in func_comp if c['improvement'] < -5 and c['cy_cumtime'] > 0.001]
             if regressed:
                 regressed.sort(key=lambda x: x['improvement'])
                 
-                f.write("\n## ⚠️ 需要关注的函数（性能下降）\n\n")
+                f.write("\n## [警告]️ 需要关注的函数（性能下降）\n\n")
                 f.write("| 排名 | 函数名 | BT累积时间(s) | CY累积时间(s) | 变化(%) | 额外耗时(s) | 文件 |\n")
                 f.write("|------|--------|---------------|---------------|---------|-------------|------|\n")
                 
                 for idx, item in enumerate(regressed[:10], 1):
                     func_name = item['function'][:50]
                     filename = item['filename']
-                    f.write(f"| {idx} | `{func_name}` | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} | ⚠️ {item['improvement']:+.1f}% | {-item['time_saved']:.4f} | {filename} |\n")
+                    f.write(f"| {idx} | `{func_name}` | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} | [警告]️ {item['improvement']:+.1f}% | {-item['time_saved']:.4f} | {filename} |\n")
 
         # 函数对齐情况
         if 'function_alignment' in comparison:
-            f.write("\n## 🧭 函数对齐情况\n\n")
+            f.write("\n##  函数对齐情况\n\n")
             f.write("| 函数名 | 文件 | BT存在 | CY存在 | BT累积时间(s) | CY累积时间(s) |\n")
             f.write("|--------|------|--------|--------|----------------|----------------|\n")
             aligned = comparison['function_alignment']
             # 重点按 BT 时间排序，显示前 200 条
             aligned = sorted(aligned, key=lambda x: x['bt_cumtime'], reverse=True)[:200]
             for item in aligned:
-                f.write(f"| `{item['function']}` | {item['filename']} | {'✅' if item['in_bt'] else '❌'} | {'✅' if item['in_cy'] else '❌'} | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} |\n")
+                f.write(f"| `{item['function']}` | {item['filename']} | {'[成功]' if item['in_bt'] else '[失败]'} | {'[成功]' if item['in_cy'] else '[失败]'} | {item['bt_cumtime']:.4f} | {item['cy_cumtime']:.4f} |\n")
         
         # 优化建议
-        f.write("\n## 💡 优化建议\n\n")
+        f.write("\n## [提示] 优化建议\n\n")
         
         if 'function_comparison' in comparison:
             f.write("### 高优先级优化目标\n\n")
@@ -433,7 +433,7 @@ def generate_markdown_report(comparison, output_file):
         f.write("5. **C函数**: 使用 `libc.math` 中的C数学函数\n")
         f.write("6. **内联函数**: 对小型频繁调用的函数使用 `cdef inline`\n")
     
-    print(f"✅ Markdown报告已生成: {output_file}")
+    print(f"[成功] Markdown报告已生成: {output_file}")
 
 
 def generate_html_report(comparison, output_file):
@@ -451,7 +451,7 @@ def generate_html_report(comparison, output_file):
         # 按backtrader累积时间排序，显示Top 100
         hotspots = sorted(func_comp, key=lambda x: x['bt_cumtime'], reverse=True)
         
-        function_table_html = "<h2>🔥 需要优化的热点函数 (Top 100)</h2><table><thead><tr><th>排名</th><th>函数名</th><th>BT累积时间(s)</th><th>CY累积时间(s)</th><th>改进(%)</th><th>时间节省(s)</th><th>文件</th></tr></thead><tbody>"
+        function_table_html = "<h2> 需要优化的热点函数 (Top 100)</h2><table><thead><tr><th>排名</th><th>函数名</th><th>BT累积时间(s)</th><th>CY累积时间(s)</th><th>改进(%)</th><th>时间节省(s)</th><th>文件</th></tr></thead><tbody>"
         
         for idx, item in enumerate(hotspots[:100], 1):
             func_name = item['function'][:50]
@@ -468,7 +468,7 @@ def generate_html_report(comparison, output_file):
         bt_times = comparison['backtrader']['all_times']
         cy_times = comparison['cybacktrader']['all_times']
         
-        rounds_table_html = "<h2>📈 多轮测试详情</h2><table><thead><tr><th>轮次</th><th>Backtrader (s)</th><th>CyBacktrader (s)</th><th>加速比</th></tr></thead><tbody>"
+        rounds_table_html = "<h2>[提升] 多轮测试详情</h2><table><thead><tr><th>轮次</th><th>Backtrader (s)</th><th>CyBacktrader (s)</th><th>加速比</th></tr></thead><tbody>"
         
         for i, (bt_t, cy_t) in enumerate(zip(bt_times, cy_times), 1):
             round_speedup = bt_t / cy_t if cy_t > 0 else 0
@@ -529,14 +529,14 @@ def generate_html_report(comparison, output_file):
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 性能对比报告</h1>
+            <h1>[快速] 性能对比报告</h1>
             <p>Backtrader vs CyBacktrader</p>
             <p style="font-size: 0.9em; margin-top: 10px;">生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
         
         <div class="content">
             <div class="section">
-                <h2>📊 总体性能对比</h2>
+                <h2>[图表] 总体性能对比</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3>Backtrader 平均时间</h3>
@@ -573,7 +573,7 @@ def generate_html_report(comparison, output_file):
             </div>
             
             <div class="section">
-                <h2>💡 优化建议</h2>
+                <h2>[提示] 优化建议</h2>
                 <ul style="line-height: 2;">
                     <li><strong>使用 cdef class:</strong> 将Python类转换为Cython扩展类型</li>
                     <li><strong>类型声明:</strong> 为变量、参数和返回值添加C类型声明</li>
@@ -595,7 +595,7 @@ def generate_html_report(comparison, output_file):
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     
-    print(f"✅ HTML报告已生成: {output_file}")
+    print(f"[成功] HTML报告已生成: {output_file}")
 
 
 def compare_results(bt_results, cy_results, rounds):
@@ -614,7 +614,7 @@ def compare_results(bt_results, cy_results, rounds):
     cy_times = [r['execution_time'] for r in cy_results if r['success']]
     
     if not bt_times or not cy_times:
-        print("❌ 没有成功的测试结果")
+        print("[失败] 没有成功的测试结果")
         return None
     
     bt_avg_time = sum(bt_times) / len(bt_times)
@@ -763,14 +763,14 @@ def main():
     
     # 验证参数
     if args.type == 'line' and not LINE_PROFILER_AVAILABLE:
-        print("❌ 行级分析需要安装 line_profiler")
+        print("[失败] 行级分析需要安装 line_profiler")
         print("   安装命令: pip install line_profiler")
         return 1
     
     print("="*70)
     print("Backtrader vs CyBacktrader 统一性能分析工具")
     print("="*70)
-    print(f"📋 配置信息:")
+    print(f"[配置] 配置信息:")
     print(f"   数据规模: {args.data_size:,} 行")
     print(f"   分析类型: {args.type}")
     print(f"   对比指标: {args.compare}")
@@ -784,13 +784,13 @@ def main():
     # 准备数据文件
     if args.data_file and os.path.exists(args.data_file):
         data_file = args.data_file
-        print(f"\n✅ 使用现有数据文件: {data_file}")
+        print(f"\n[成功] 使用现有数据文件: {data_file}")
     else:
         data_file = args.data_file if args.data_file else f"test_data_{args.data_size}.csv"
         if not os.path.exists(data_file):
             data_file = create_test_dataset(args.data_size, data_file)
         else:
-            print(f"\n✅ 使用现有数据文件: {data_file}")
+            print(f"\n[成功] 使用现有数据文件: {data_file}")
     
     # 运行多轮测试
     print(f"\n{'='*70}")
@@ -806,41 +806,41 @@ def main():
         print(f"{'='*70}")
         
         # 测试 Backtrader
-        print(f"\n🔍 分析 Backtrader...")
+        print(f"\n[分析] 分析 Backtrader...")
         bt_result = run_strategy_with_profiling('backtrader', data_file, args.type, args.compare)
         
         if bt_result and bt_result['success']:
             bt_results.append(bt_result)
-            print(f"✅ Backtrader 执行时间: {bt_result['execution_time']:.4f}s")
+            print(f"[成功] Backtrader 执行时间: {bt_result['execution_time']:.4f}s")
             if 'memory_used_mb' in bt_result:
                 print(f"   内存使用: {bt_result.get('memory_used_mb', 0):.2f}MB")
                 print(f"   内存峰值: {bt_result.get('memory_peak_mb', 0):.2f}MB")
         else:
-            print(f"❌ Backtrader 测试失败")
+            print(f"[失败] Backtrader 测试失败")
         
         # 测试 CyBacktrader
-        print(f"\n🔍 分析 CyBacktrader...")
+        print(f"\n[分析] 分析 CyBacktrader...")
         cy_result = run_strategy_with_profiling('cybacktrader', data_file, args.type, args.compare)
         
         if cy_result and cy_result['success']:
             cy_results.append(cy_result)
-            print(f"✅ CyBacktrader 执行时间: {cy_result['execution_time']:.4f}s")
+            print(f"[成功] CyBacktrader 执行时间: {cy_result['execution_time']:.4f}s")
             if 'memory_used_mb' in cy_result:
                 print(f"   内存使用: {cy_result.get('memory_used_mb', 0):.2f}MB")
                 print(f"   内存峰值: {cy_result.get('memory_peak_mb', 0):.2f}MB")
         else:
-            print(f"❌ CyBacktrader 测试失败")
+            print(f"[失败] CyBacktrader 测试失败")
         
         # 显示本轮对比
         if bt_result and cy_result and bt_result['success'] and cy_result['success']:
             round_speedup = bt_result['execution_time'] / cy_result['execution_time']
-            print(f"\n📊 本轮加速比: {round_speedup:.2f}x")
+            print(f"\n[图表] 本轮加速比: {round_speedup:.2f}x")
         
         print()
     
     # 检查是否有成功的测试
     if not bt_results or not cy_results:
-        print("\n❌ 没有成功的测试结果，无法生成报告")
+        print("\n[失败] 没有成功的测试结果，无法生成报告")
         return 1
     
     # 对比分析
@@ -851,7 +851,7 @@ def main():
     comparison = compare_results(bt_results, cy_results, args.rounds)
     
     if comparison is None:
-        print("❌ 对比分析失败")
+        print("[失败] 对比分析失败")
         return 1
     
     # 生成报告（文件名包含数据规模）
@@ -913,7 +913,7 @@ def main():
     with open(json_file, 'w', encoding='utf-8') as f:
         json.dump(json_data, f, indent=2, ensure_ascii=False)
     
-    print(f"✅ JSON数据已保存: {json_file}")
+    print(f"[成功] JSON数据已保存: {json_file}")
     
     # 打印摘要
     print(f"\n{'='*70}")
@@ -931,16 +931,16 @@ def main():
     
     print(f"{'='*70}")
     
-    print(f"\n✅ 所有报告已生成到目录: {args.output_dir}")
-    print(f"   📄 Markdown报告: {markdown_file}")
-    print(f"   🌐 HTML报告: {html_file}")
-    print(f"   📊 JSON数据: {json_file}")
+    print(f"\n[成功] 所有报告已生成到目录: {args.output_dir}")
+    print(f"    Markdown报告: {markdown_file}")
+    print(f"    HTML报告: {html_file}")
+    print(f"   [图表] JSON数据: {json_file}")
     
     # 清理测试数据文件（如果是自动生成的）
     if not args.data_file and os.path.exists(data_file):
         try:
             os.remove(data_file)
-            print(f"\n🗑️  已清理测试数据文件: {data_file}")
+            print(f"\n️  已清理测试数据文件: {data_file}")
         except:
             pass
     

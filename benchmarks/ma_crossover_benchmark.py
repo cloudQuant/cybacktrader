@@ -26,6 +26,11 @@ from matplotlib import rcParams
 import warnings
 warnings.filterwarnings('ignore')
 
+# 添加项目根目录到路径（用于导入cybacktrader）
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 # 设置中文字体
 rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
 rcParams['axes.unicode_minus'] = False
@@ -160,17 +165,20 @@ def generate_ohlcv_data(n_rows, start_date=None, use_cache=True):
 def save_data_to_csv(df, filename):
     """将DataFrame保存为CSV文件 - 优化版"""
     try:
-        # 格式化日期（直接修改原DataFrame，避免拷贝）
+        # 格式化日期为字符串，避免 pandas 纳秒时间上限导致的溢出
         df_copy = df.copy()
+        # 直接使用 Python datetime 的 strftime，避免 pd.to_datetime 转换
+        # 处理 datetime.datetime、datetime.date 和 pandas.Timestamp 类型
+        def format_date(d):
+            if hasattr(d, 'strftime'):
+                return d.strftime('%Y-%m-%d')
+            else:
+                return str(d)
+        
+        df_copy['datetime'] = [format_date(d) for d in df_copy['datetime']]
 
-        # 确保 datetime 列是 datetime 类型
-        if not pd.api.types.is_datetime64_any_dtype(df_copy['datetime']):
-            df_copy['datetime'] = pd.to_datetime(df_copy['datetime'])
-
-        df_copy['datetime'] = df_copy['datetime'].dt.strftime('%Y-%m-%d')
-
-        # 保存为CSV（不包含索引，使用更快的引擎）
-        df_copy.to_csv(filename, index=False, engine='c')
+        # 保存为CSV（不包含索引）
+        df_copy.to_csv(filename, index=False)
 
         return filename
     except Exception as e:

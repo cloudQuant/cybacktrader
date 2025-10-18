@@ -10,6 +10,9 @@
 import itertools
 import sys
 
+# Cython imports
+cimport cython
+
 PY2 = sys.version_info.major == 2   # 获取当前python的版本，看是否是python2,如果是python2,返回值就是True,否则就是False
 
 # 如果是python2
@@ -89,14 +92,19 @@ else:
     range = range
     zip = zip
     long = int
-    # 需要注意，这个cmp是自定义的函数，返回值是1,0,-1
+    
     # Cython优化：对比函数
     def cmp(a, b): 
+        """高性能对比函数，返回值是1,0,-1"""
         return (a > b) - (a < b)
 
-    def bytes(x): return x.encode('utf-8')
+    def bytes(x): 
+        """字符串转bytes"""
+        return x.encode('utf-8')
 
-    def bstr(x): return str(x)
+    def bstr(x): 
+        """对象转字符串"""
+        return str(x)
 
     from io import StringIO
 
@@ -104,17 +112,24 @@ else:
                                 install_opener)
     from urllib.parse import quote as urlquote
 
-    def iterkeys(d): return iter(d.keys())
+    # Cython优化：字典迭代器函数
+    def iterkeys(d): 
+        return iter(d.keys())
 
-    def itervalues(d): return iter(d.values())
+    def itervalues(d): 
+        return iter(d.values())
 
-    def iteritems(d): return iter(d.items())
+    def iteritems(d): 
+        return iter(d.items())
 
-    def keys(d): return list(d.keys())
+    def keys(d): 
+        return list(d.keys())
 
-    def values(d): return list(d.values())
+    def values(d): 
+        return list(d.values())
 
-    def items(d): return list(d.items())
+    def items(d): 
+        return list(d.items())
 
     import queue as queue
     
