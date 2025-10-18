@@ -16,11 +16,16 @@ from cybacktrader.comminfo import CommInfoBase
 from cybacktrader.metabase import MetaParams
 from cybacktrader.utils.py3 import with_metaclass
 
+# Cython imports for C-level optimization
+cimport cython
+
 # from . import fillers as fillers
 # from . import fillers as filler
 
 # broker元类，使得get_cash与getcash,get_value与getvalue方法相同 - Cython深度优化
 class MetaBroker(MetaParams):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def __init__(cls, name, bases, dct):
         """Initialize broker metaclass with method translations"""
         # Class has already been created ... fill missing methods if needed be
@@ -44,22 +49,27 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         ('commission', CommInfoBase(percabs=True)),
     )
 
-    # 初始化
+    # 初始化 - Cython深度优化
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def __init__(self):
         self.comminfo = dict()
         self.init()
 
-    # 这个init用一个None做key,commission做value
+    # 这个init用一个None做key,commission做value - Cython深度优化
+    @cython.final
     def init(self):
         # called from init and from start
         if None not in self.comminfo:
             self.comminfo = dict({None: self.p.commission})
 
-    # 开始
+    # 开始 - Cython深度优化
+    @cython.final
     def start(self):
         self.init()
 
-    # 结束
+    # 结束 - Cython深度优化
+    @cython.final
     def stop(self):
         pass
 
@@ -73,18 +83,25 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         # Add fund history. See cerebro for details
         raise NotImplementedError
 
-    # 获取佣金信息，如果data._name在佣金信息字典中，获取相应的值，否则用默认的self.p.commission
+    # 获取佣金信息，如果data._name在佣金信息字典中，获取相应的值，否则用默认的self.p.commission - Cython深度优化
+    @cython.final
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def getcommissioninfo(self, data):
         # Retrieves the ``CommissionInfo`` scheme associated with the given ``data``
         # if data._name in self.comminfo:
         #     return self.comminfo[data._name]
         # todo 避免访问被保护的属性._name,在加载数据的时候，已经增加了.name属性，用.name替代_name,避免pycharm弹出警告信息
-        if data.name in self.comminfo:
-            return self.comminfo[data.name]
+        cdef dict comminfo_dict = self.comminfo
+        cdef object data_name = data.name
+        
+        if data_name in comminfo_dict:
+            return comminfo_dict[data_name]
 
-        return self.comminfo[None]
+        return comminfo_dict[None]
 
-    # 设置佣金
+    # 设置佣金 - Cython深度优化
+    @cython.final
     def setcommission(self,
                       commission=0.0, margin=None, mult=1.0,
                       commtype=None, percabs=True, stocklike=False,
@@ -99,7 +116,8 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         If name is ``None``, this will be the default for assets for which no
         other ``CommissionInfo`` scheme can be found
         """
-
+        cdef object comm
+        
         comm = CommInfoBase(commission=commission, margin=margin, mult=mult,
                             commtype=commtype, stocklike=stocklike,
                             percabs=percabs,
@@ -107,7 +125,8 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
                             leverage=leverage, automargin=automargin)
         self.comminfo[name] = comm
 
-    # 增加佣金信息
+    # 增加佣金信息 - Cython深度优化
+    @cython.final
     def addcommissioninfo(self, comminfo, name=None):
         # Adds a ``CommissionInfo`` object that will be the default for all assets if ``name`` is ``None``
         self.comminfo[name] = comminfo
@@ -120,20 +139,24 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
     def getvalue(self, datas=None):
         raise NotImplementedError
 
-    # 获取基金份额
+    # 获取基金份额 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def get_fundshares(self):
         # Returns the current number of shares in the fund-like mode
         return 1.0  # the abstract mode has only 1 share
 
     fundshares = property(get_fundshares)
 
-    # 获取基金市值
+    # 获取基金市值 - Cython深度优化
+    @cython.final
     def get_fundvalue(self):
         return self.getvalue()
 
     fundvalue = property(get_fundvalue)
 
-    # 设置基金模式
+    # 设置基金模式 - Cython深度优化
+    @cython.final
     def set_fundmode(self, fundmode, fundstartval=None):
         """Set the actual fundmode (True or False)
 
@@ -141,7 +164,8 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
         """
         pass  # do nothing, not all brokers can support this
 
-    # 获取基金模式
+    # 获取基金模式 - Cython深度优化
+    @cython.final
     def get_fundmode(self):
         # Returns the actual fundmode (True or False)
         return False
@@ -176,7 +200,8 @@ class BrokerBase(with_metaclass(MetaBroker, object)):
 
         raise NotImplementedError
 
-    # 下一个bar
+    # 下一个bar - Cython深度优化
+    @cython.final
     def next(self):
         pass
 
