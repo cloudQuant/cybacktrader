@@ -18,6 +18,10 @@ import math
 from cybacktrader.linebuffer import LineActions
 from cybacktrader.utils.py3 import cmp
 
+# Cython imports for C-level optimization
+cimport cython
+from libc.math cimport fabs as c_fabs
+
 # C级比较函数：避免在热点循环中调用Python层cmp
 cdef inline int cmp_double(double a, double b) nogil:
     if a < b:
@@ -28,16 +32,40 @@ cdef inline int cmp_double(double a, double b) nogil:
         return 0
 
 # Generate a List equivalent which uses "is" for contains
-# 创建一个新的List类,改写了__contains__方法,如果list中有一个元素的哈希值等于other的哈希值，那么就返回True
+# 创建一个新的List类,改写了__contains__方法,如果list中有一个元素的哈希值等于other的哈希值，那么就返回True - Cython深度优化
 class List(list):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def __contains__(self, other):
-        return any(x.__hash__() == other.__hash__() for x in self)
+        cdef int i, n
+        cdef object x
+        cdef long other_hash
+        
+        other_hash = other.__hash__()
+        n = len(self)
+        
+        for i in range(n):
+            x = self[i]
+            if x.__hash__() == other_hash:
+                return True
+        return False
 
-# 创建一个类，把其中的元素进行序列化
+# 创建一个类，把其中的元素进行序列化 - Cython深度优化
 class Logic(LineActions):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def __init__(self, *args):
+        cdef int i, n
+        cdef list result
+        
         super(Logic, self).__init__()
-        self.args = [self.arrayize(arg) for arg in args]
+        
+        # 优化列表推导为C级循环
+        n = len(args)
+        result = []
+        for i in range(n):
+            result.append(self.arrayize(args[i]))
+        self.args = result
 
 # 避免两个line想除的时候有值是0，如果分母是0,除以得到的值是0
 class DivByZero(Logic):
@@ -57,9 +85,13 @@ class DivByZero(Logic):
         self.b = b
         self.zero = zero
 
+    @cython.cdivision(True)
     def next(self):
-        b = self.b[0]
-        self[0] = self.a[0] / b if b else self.zero
+        cdef double b_val = self.b[0]
+        cdef double a_val = self.a[0]
+        cdef double zero_val = self.zero
+        
+        self[0] = a_val / b_val if b_val != 0.0 else zero_val
 
     def once(self, start, end):
         # Cython深度优化：除法保护
@@ -94,13 +126,17 @@ class DivZeroByZero(Logic):
         self.single = single
         self.dual = dual
 
+    @cython.cdivision(True)
     def next(self):
-        b = self.b[0]
-        a = self.a[0]
-        if b == 0.0:
-            self[0] = self.dual if a == 0.0 else self.single
+        cdef double b_val = self.b[0]
+        cdef double a_val = self.a[0]
+        cdef double single_val = self.single
+        cdef double dual_val = self.dual
+        
+        if b_val == 0.0:
+            self[0] = dual_val if a_val == 0.0 else single_val
         else:
-            self[0] = self.a[0] / b
+            self[0] = a_val / b_val
 
     def once(self, start, end):
         # Cython深度优化：双零除法保护
@@ -128,8 +164,12 @@ class Cmp(Logic):
         self.a = self.args[0]
         self.b = self.args[1]
 
+    @cython.cdivision(True)
     def next(self):
-        self[0] = cmp(self.a[0], self.b[0])
+        cdef double a_val = self.a[0]
+        cdef double b_val = self.b[0]
+        
+        self[0] = cmp_double(a_val, b_val)
 
     def once(self, start, end):
         # Cython优化：比较操作
@@ -153,11 +193,15 @@ class CmpEx(Logic):
         self.r2 = self.args[3]
         self.r3 = self.args[4]
 
+    @cython.cdivision(True)
     def next(self):
+        cdef double a_val = self.a[0]
+        cdef double b_val = self.b[0]
+        
         # self[0] = cmp(self.a[0], self.b[0])
-        if self.a[0]<self.b[0]:
+        if a_val < b_val:
             self[0] = self.r1[0]
-        elif self.a[0]>self.b[0]:
+        elif a_val > b_val:
             self[0] = self.r3[0]
         else:
             self[0] = self.r2[0]
@@ -193,8 +237,11 @@ class If(Logic):
         self.b = self.args[1]
         self.cond = self.arrayize(cond)
 
+    @cython.cdivision(True)
     def next(self):
-        self[0] = self.a[0] if self.cond[0] else self.b[0]
+        cdef double cond_val = self.cond[0]
+        
+        self[0] = self.a[0] if cond_val != 0.0 else self.b[0]
 
     def once(self, start, end):
         # Cython深度优化 + 兼容性回退：优先使用 typed memoryviews，其次退回 Python 对象路径
@@ -226,20 +273,38 @@ class If(Logic):
         for i in range(start, end):
             dst_o[i] = srca_o[i] if cond_o[i] else srcb_o[i]
 
-# 一个逻辑应用到多个元素上
+# 一个逻辑应用到多个元素上 - Cython深度优化
 class MultiLogic(Logic):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def next(self):
-        self[0] = self.flogic([arg[0] for arg in self.args])
+        cdef int i, n
+        cdef list values
+        
+        n = len(self.args)
+        values = []
+        for i in range(n):
+            values.append(self.args[i][0])
+        
+        self[0] = self.flogic(values)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def once(self, start, end):
         # Cython优化：多逻辑
-        cdef int i
+        cdef int i, j, n
+        cdef list values
+        
         dst = self.array
         arrays = [arg.array for arg in self.args]
         flogic = self.flogic
+        n = len(arrays)
 
         for i in range(start, end):
-            dst[i] = flogic([arr[i] for arr in arrays])
+            values = []
+            for j in range(n):
+                values.append(arrays[j][i])
+            dst[i] = flogic(values)
 
 # 主要是调用了functools.partial生成偏函数，functools.reduce,对一个sequence迭代使用function
 class MultiLogicReduce(MultiLogic):
