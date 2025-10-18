@@ -28,6 +28,9 @@ from cybacktrader.dataseries import SimpleFilterWrapper
 from cybacktrader.resamplerfilter import Resampler, Replayer
 from cybacktrader.tradingcal import PandasMarketCalendar
 
+# Cython imports for C-level optimization
+cimport cython
+
 # 这个元抽象类主要继承OHLCDateTime，然后在初始化的时候对数据的名称、时间、过滤器等进行一定的处理
 class MetaAbstractDataBase(dataseries.OHLCDateTime.__class__):
     # _indcol的属性设置为一个空的字典
@@ -146,8 +149,11 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         'CONNECTED', 'DISCONNECTED', 'CONNBROKEN', 'DELAYED',
         'LIVE', 'NOTSUBSCRIBED', 'NOTSUPPORTED_TIMEFRAME', 'UNKNOWN']
 
-    # 类方法，获取数据的状态
+    # 类方法，获取数据的状态 - Cython深度优化
     @classmethod
+    @cython.final
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def _getstatusname(cls, status):
         return cls._NOTIFNAMES[status]
 
@@ -170,16 +176,19 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
     # 是否已经开始
     _started = False
 
+    # Cython深度优化
+    @cython.final
     def _start_finish(self):
         # A live feed (for example) may have learnt something about the
         # timezones after the start and that's why the date/time related
         # parameters are converted at this late stage
         # Get the output timezone (if any)
         # 获取具体的时区
-        self._tz = self._gettz()
+        cdef object tz = self._gettz()
+        self._tz = tz
         # Lines have already been created, set the tz
         # 给时间设置具体的时区
-        self.lines.datetime._settz(self._tz)
+        self.lines.datetime._settz(tz)
 
         # This should probably be also called from an override-able method
         # 本地化输入的时区
@@ -212,12 +221,16 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         # 开始状态
         self._started = True
 
+    # Cython深度优化
+    @cython.final
     def _start(self):
         self.start()
         # 如果还没进入到开始状态，先初始化，然后进入开始状态
         if not self._started:
             self._start_finish()
 
+    # Cython深度优化
+    @cython.final
     def _timeoffset(self):
         # 时间偏移量
         return self._tmoffset
@@ -249,52 +262,64 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
 
         return nexteos, nextdteos
 
-    # 把tzinput进行解析，并返回
+    # 把tzinput进行解析，并返回 - Cython深度优化
+    @cython.final
     def _gettzinput(self):
         """Can be overridden by classes to return a timezone for input"""
         return tzparse(self.p.tzinput)
 
-    # 把tz进行解析，并返回
+    # 把tz进行解析，并返回 - Cython深度优化
+    @cython.final
     def _gettz(self):
         """To be overridden by subclasses which may auto-calculate the
         timezone"""
         return tzparse(self.p.tz)
 
-    # 把时间转化成数字，如果时区信息不是None的话，先把时间进行本地化，然后再转化
+    # 把时间转化成数字，如果时区信息不是None的话，先把时间进行本地化，然后再转化 - Cython深度优化
+    @cython.final
     def date2num(self, dt):
-        if self._tz is not None:
-            return date2num(self._tz.localize(dt))
+        cdef object tz = self._tz
+        if tz is not None:
+            return date2num(tz.localize(dt))
 
         return date2num(dt)
 
-    # 把数字转化成日期+时间
+    # 把数字转化成日期+时间 - Cython深度优化
+    @cython.final
     def num2date(self, dt=None, tz=None, naive=True):
+        cdef object tz_val = tz or self._tz
+        
         if dt is None:
-            return num2date(self.lines.datetime[0], tz or self._tz, naive)
+            return num2date(self.lines.datetime[0], tz_val, naive)
 
-        return num2date(dt, tz or self._tz, naive)
+        return num2date(dt, tz_val, naive)
 
-    # 是否具有实时数据，默认是没有，如果有实时数据，需要重写
+    # 是否具有实时数据，默认是没有，如果有实时数据，需要重写 - Cython深度优化
+    @cython.final
     def haslivedata(self):
         return False  # must be overridden for those that can
 
-    # 实盘数据进行抽样的时候，等待的时间间隔
+    # 实盘数据进行抽样的时候，等待的时间间隔 - Cython深度优化
+    @cython.final
+    @cython.cdivision(True)
     def do_qcheck(self, onoff, qlapse):
         # if onoff is True the data will wait p.qcheck for incoming live data
         # on its queue.
-        qwait = self.p.qcheck if onoff else 0.0
+        cdef double qwait = self.p.qcheck if onoff else 0.0
         qwait = max(0.0, qwait - qlapse)
         self._qcheck = qwait
 
     # 是否是实时数据，默认是没有，如果有的话，cerebro会不在使用preload和runonce，因为一个实时数据需要
-    # 一个个tick或者bar进行获取
+    # 一个个tick或者bar进行获取 - Cython深度优化
+    @cython.final
     def islive(self):
         """If this returns True, ``Cerebro`` will deactivate ``preload`` and
         ``runonce`` because a live data source must be fetched tick by tick (or
         bar by bar)"""
         return False
 
-    # 如果最新的状态不等于当前状态，需要把信息添加到notifs中以便更新最新状态
+    # 如果最新的状态不等于当前状态，需要把信息添加到notifs中以便更新最新状态 - Cython深度优化
+    @cython.final
     def put_notification(self, status, *args, **kwargs):
         """Add arguments to notification queue"""
         if self._laststatus != status:
