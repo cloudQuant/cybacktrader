@@ -1,0 +1,55 @@
+[1mdiff --git a/cybacktrader/order.pyx b/cybacktrader/order.pyx[m
+[1mindex 1b4f391..6683765 100644[m
+[1m--- a/cybacktrader/order.pyx[m
+[1m+++ b/cybacktrader/order.pyx[m
+[36m@@ -1,9 +1,16 @@[m
+ #!/usr/bin/env python[m
+ # -*- coding: utf-8; py-indent-offset:4 -*-[m
+ [m
+[31m-# Cython性能优化标记（保守设置）[m
+[32m+[m[32m# Cython深度性能优化标记（完整版）[m
+ # cython: language_level=3[m
+[32m+[m[32m# cython: boundscheck=False[m
+[32m+[m[32m# cython: wraparound=False[m
+[32m+[m[32m# cython: cdivision=True[m
+[32m+[m[32m# cython: nonecheck=False[m
+[32m+[m[32m# cython: initializedcheck=False[m
+ # cython: infer_types=True[m
+[32m+[m[32m# cython: optimize.unpack_method_calls=True[m
+[32m+[m[32m# cython: optimize.use_switch=True[m
+ [m
+ import collections[m
+ from copy import copy[m
+[36m@@ -200,15 +207,25 @@[m [mclass OrderData(object):[m
+     # 根据订单的执行调整当前的各个属性[m
+     def addbit(self, exbit):[m
+         # Stores an ExecutionBit and recalculates own values from ExBit[m
+[31m-        self.exbits.append(exbit)[m
+[31m-[m
+[31m-        self.remsize -= exbit.size[m
+[32m+[m[32m        cdef object exbits_append = self.exbits.append[m
+[32m+[m[32m        cdef long remsize = self.remsize[m
+[32m+[m[32m        cdef long size_before = self.size[m
+[32m+[m[32m        cdef long ex_size = exbit.size[m
+[32m+[m[32m        cdef double price_before = self.price[m
+[32m+[m[32m        cdef double ex_price = exbit.price[m
+[32m+[m[32m        cdef double oldvalue = size_before * price_before[m
+[32m+[m[32m        cdef double newvalue = ex_size * ex_price[m
+[32m+[m
+[32m+[m[32m        exbits_append(exbit)[m
+[32m+[m
+[32m+[m[32m        remsize -= ex_size[m
+[32m+[m[32m        self.remsize = remsize[m
+ [m
+         self.dt = exbit.dt[m
+[31m-        oldvalue = self.size * self.price[m
+[31m-        newvalue = exbit.size * exbit.price[m
+[31m-        self.size += exbit.size[m
+[31m-        self.price = (oldvalue + newvalue) / self.size[m
+[32m+[m
+[32m+[m[32m        size_before += ex_size[m
+[32m+[m[32m        self.size = size_before[m
+[32m+[m[32m        self.price = (oldvalue + newvalue) / size_before[m
+         self.value += exbit.value[m
+         self.comm += exbit.comm[m
+         self.pnl += exbit.pnl[m

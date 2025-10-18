@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记（保守设置）
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 import collections
 from copy import copy
@@ -200,15 +207,25 @@ class OrderData(object):
     # 根据订单的执行调整当前的各个属性
     def addbit(self, exbit):
         # Stores an ExecutionBit and recalculates own values from ExBit
-        self.exbits.append(exbit)
+        cdef object exbits_append = self.exbits.append
+        cdef long remsize = self.remsize
+        cdef long size_before = self.size
+        cdef long ex_size = exbit.size
+        cdef double price_before = self.price
+        cdef double ex_price = exbit.price
+        cdef double oldvalue = size_before * price_before
+        cdef double newvalue = ex_size * ex_price
 
-        self.remsize -= exbit.size
+        exbits_append(exbit)
+
+        remsize -= ex_size
+        self.remsize = remsize
 
         self.dt = exbit.dt
-        oldvalue = self.size * self.price
-        newvalue = exbit.size * exbit.price
-        self.size += exbit.size
-        self.price = (oldvalue + newvalue) / self.size
+
+        size_before += ex_size
+        self.size = size_before
+        self.price = (oldvalue + newvalue) / size_before
         self.value += exbit.value
         self.comm += exbit.comm
         self.pnl += exbit.pnl
