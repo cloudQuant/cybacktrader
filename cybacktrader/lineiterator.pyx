@@ -28,6 +28,8 @@ from cybacktrader import metabase
 class MetaLineIterator(LineSeries.__class__):
     # 为LineIterator做一些处理工作
     def donew(cls, *args, **kwargs):
+        cdef int l
+        cdef object data, line, linealias
         # 创建类
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).donew(*args, **kwargs)
@@ -106,12 +108,14 @@ class MetaLineIterator(LineSeries.__class__):
 
         # Parameter values have now been set before __init__
         # 设置dnames的值，如果d设置了_name属性
-        _obj.dnames = DotDict([(d._name, d)
+        # 保持与原行为一致：仅当 d 有 _name 属性且为真时收集
+        _obj.dnames = DotDict([(getattr(d, '_name'), d)
                                for d in _obj.datas if getattr(d, '_name', '')])
 
         return _obj, newargs, kwargs
 
     def dopreinit(cls, _obj, *args, **kwargs):
+        cdef object line
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).dopreinit(_obj, *args, **kwargs)
 
@@ -141,6 +145,7 @@ class MetaLineIterator(LineSeries.__class__):
         return _obj, args, kwargs
 
     def dopostinit(cls, _obj, *args, **kwargs):
+        cdef object line
         _obj, args, kwargs = \
             super(MetaLineIterator, cls).dopostinit(_obj, *args, **kwargs)
 
@@ -203,26 +208,28 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def _stage2(self):
         # 设置_stage2状态 - Cython优化
         super(LineIterator, self)._stage2()
-
         cdef object data
-        for data in self.datas:
+        cdef object datas = self.datas
+        for data in datas:
             data._stage2()
 
         cdef object lineiterators, lineiterator
-        for lineiterators in self._lineiterators.values():
+        cdef object iter_values = self._lineiterators.values()
+        for lineiterators in iter_values:
             for lineiterator in lineiterators:
                 lineiterator._stage2()
 
     def _stage1(self):
         # 设置_stage1状态 - Cython优化
         super(LineIterator, self)._stage1()
-
         cdef object data
-        for data in self.datas:
+        cdef object datas = self.datas
+        for data in datas:
             data._stage1()
 
         cdef object lineiterators, lineiterator
-        for lineiterators in self._lineiterators.values():
+        cdef object iter_values = self._lineiterators.values()
+        for lineiterators in iter_values:
             for lineiterator in lineiterators:
                 lineiterator._stage1()
 
@@ -300,9 +307,11 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         cdef int clock_len = self._clk_update()
         cdef int minperstatus
         cdef object indicator
+        cdef object indicators
         
         # indicator调用_next
-        for indicator in self._lineiterators[LineIterator.IndType]:
+        indicators = self._lineiterators[LineIterator.IndType]
+        for indicator in indicators:
             indicator._next()
 
         # 调用_notify函数，目前是空函数
@@ -341,22 +350,25 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def _once(self):
         # 调用once的相关操作 - Cython深度优化
         cdef object indicator, observer, data, line
-        
+        cdef object datas = self.datas
+        cdef object indicators = self._lineiterators[LineIterator.IndType]
+        cdef object observers = self._lineiterators[LineIterator.ObsType]
+
         self.forward(size=self._clock.buflen())
 
-        for indicator in self._lineiterators[LineIterator.IndType]:
+        for indicator in indicators:
             indicator._once()
 
-        for observer in self._lineiterators[LineIterator.ObsType]:
+        for observer in observers:
             observer.forward(size=self.buflen())
 
-        for data in self.datas:
+        for data in datas:
             data.home()
 
-        for indicator in self._lineiterators[LineIterator.IndType]:
+        for indicator in indicators:
             indicator.home()
 
-        for observer in self._lineiterators[LineIterator.ObsType]:
+        for observer in observers:
             observer.home()
 
         self.home()
@@ -422,11 +434,13 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
                 line.qbuffer()
 
         # If called, anything under it, must save
-        for obj in self._lineiterators[self.IndType]:
+        cdef object iterators = self._lineiterators[self.IndType]
+        for obj in iterators:
             obj.qbuffer(savemem=1)
 
         # Tell datas to adjust buffer to minimum period
-        for data in self.datas:
+        cdef object datas = self.datas
+        for data in datas:
             data.minbuffer(self._minperiod)
 
 # This 3 subclasses can be used for identification purposes within LineIterator

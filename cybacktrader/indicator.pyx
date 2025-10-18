@@ -103,13 +103,15 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
         # generic implementation if prenext is overridden but preonce is not
         cdef int i
         cdef object data, indicator
+        cdef object datas = self.datas
+        cdef object indicators = self._lineiterators[LineIterator.IndType]
         # 从start到end进行循环
         for i in range(start, end):
             # 数据每次增加
-            for data in self.datas:
+            for data in datas:
                 data.advance()
             # 指标每次增加
-            for indicator in self._lineiterators[LineIterator.IndType]:
+            for indicator in indicators:
                 indicator.advance()
             # 自身增加
             self.advance()
@@ -122,11 +124,13 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
         # here. call the overridden nextstart
         cdef int i
         cdef object data, indicator
+        cdef object datas = self.datas
+        cdef object indicators = self._lineiterators[LineIterator.IndType]
         for i in range(start, end):
-            for data in self.datas:
+            for data in datas:
                 data.advance()
 
-            for indicator in self._lineiterators[LineIterator.IndType]:
+            for indicator in indicators:
                 indicator.advance()
 
             self.advance()
@@ -136,11 +140,13 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
         # Not overridden, next must be there ...
         cdef int i
         cdef object data, indicator
+        cdef object datas = self.datas
+        cdef object indicators = self._lineiterators[LineIterator.IndType]
         for i in range(start, end):
-            for data in self.datas:
+            for data in datas:
                 data.advance()
 
-            for indicator in self._lineiterators[LineIterator.IndType]:
+            for indicator in indicators:
                 indicator.advance()
 
             self.advance()
