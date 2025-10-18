@@ -15,6 +15,9 @@
 from cybacktrader.lineiterator import LineIterator, ObserverBase, StrategyBase
 from cybacktrader.utils.py3 import with_metaclass
 
+# Cython imports for C-level optimization
+cimport cython
+
 # Observer元类
 class MetaObserver(ObserverBase.__class__):
     # 在donew的时候，创建了一个_analyzers属性，设置为空列表
@@ -47,15 +50,20 @@ class Observer(with_metaclass(MetaObserver, ObserverBase)):
     plotinfo = dict(plot=False, subplot=True)
 
     # An Observer is ideally always observing and that's why prenext calls
-    # next. The behaviour can be overridden by subclasses
+    # next. The behaviour can be overridden by subclasses - Cython深度优化
+    @cython.final
     def prenext(self):
         self.next()
-    # 注册analyzer - Cython优化
+    # 注册analyzer - Cython深度优化
+    @cython.final
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def _register_analyzer(self, analyzer):
         """Register an analyzer with this observer"""
         cdef list analyzers = self._analyzers
         analyzers.append(analyzer)
 
+    @cython.final
     def _start(self):
         self.start()
 
