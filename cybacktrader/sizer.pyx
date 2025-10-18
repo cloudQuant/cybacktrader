@@ -1,13 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记（保守设置）
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 from cybacktrader.utils.py3 import with_metaclass
 
 from cybacktrader.metabase import MetaParams
+
+# Cython imports for C-level optimization
+cimport cython
 
 # Sizer类,其他的sizer需要继承这个类并且重写_getsizing类
 class Sizer(with_metaclass(MetaParams, object)):
@@ -34,10 +44,17 @@ class Sizer(with_metaclass(MetaParams, object)):
     strategy = None
     broker = None
 
-    # 获取下单使用的具体的手数
+    # 获取下单使用的具体的手数 - Cython深度优化
+    @cython.final
     def getsizing(self, data, isbuy):
-        comminfo = self.broker.getcommissioninfo(data)
-        return self._getsizing(comminfo, self.broker.getcash(), data, isbuy)
+        cdef object comminfo, broker
+        cdef double cash
+        
+        broker = self.broker
+        comminfo = broker.getcommissioninfo(data)
+        cash = broker.getcash()
+        
+        return self._getsizing(comminfo, cash, data, isbuy)
 
     def _getsizing(self, comminfo, cash, data, isbuy):
         """This method has to be overridden by subclasses of Sizer to provide
@@ -69,7 +86,8 @@ class Sizer(with_metaclass(MetaParams, object)):
         """
         raise NotImplementedError
 
-    # 设置策略和broker
+    # 设置策略和broker - Cython深度优化
+    @cython.final
     def set(self, strategy, broker):
         self.strategy = strategy
         self.broker = broker
