@@ -18,6 +18,9 @@ from cybacktrader.lineiterator import LineIterator, IndicatorBase
 from cybacktrader.lineseries import LineSeriesMaker, Lines
 from cybacktrader.metabase import AutoInfoClass
 
+# Cython imports for C-level optimization
+cimport cython
+
 # 指标元类
 class MetaIndicator(IndicatorBase.__class__):
     # 指标名称(_refname)
@@ -91,63 +94,91 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     _ltype = LineIterator.IndType
     # 输出到csv文件被设置成False
     csv = False
-    # 当数据小于当前时间的时候，数据向前移动size
+    # 当数据小于当前时间的时候，数据向前移动size - Cython深度优化
+    @cython.final
     def advance(self, size=1):
         # Need intercepting this call to support datas with
         # different lengths (timeframes)
-        if len(self) < len(self._clock):
-            self.lines.advance(size=size)
+        cdef int self_len, clock_len, size_val
+        
+        self_len = len(self)
+        clock_len = len(self._clock)
+        
+        if self_len < clock_len:
+            size_val = <int>size if isinstance(size, int) else size
+            self.lines.advance(size=size_val)
 
-    # 如果prenext重写了，但是preonce没有被重写，通常的实施方法 - Cython优化
+    # 如果prenext重写了，但是preonce没有被重写，通常的实施方法 - Cython深度优化
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def preonce_via_prenext(self, start, end):
         # generic implementation if prenext is overridden but preonce is not
-        cdef int i
+        cdef int i, j, datas_len, indicators_len
         cdef object data, indicator
-        cdef object datas = self.datas
-        cdef object indicators = self._lineiterators[LineIterator.IndType]
-        # 从start到end进行循环
+        cdef list datas, indicators
+        
+        datas = self.datas
+        indicators = self._lineiterators[LineIterator.IndType]
+        datas_len = len(datas)
+        indicators_len = len(indicators)
+        
+        # 从start到end进行循环 - 优化为C级别循环
         for i in range(start, end):
-            # 数据每次增加
-            for data in datas:
-                data.advance()
-            # 指标每次增加
-            for indicator in indicators:
-                indicator.advance()
+            # 数据每次增加 - 优化为索引访问
+            for j in range(datas_len):
+                datas[j].advance()
+            # 指标每次增加 - 优化为索引访问
+            for j in range(indicators_len):
+                indicators[j].advance()
             # 自身增加
             self.advance()
             # 每次调用下prenext
             self.prenext()
 
-    # 如果nextstart重写了，但是oncestart没有重写，需要做的操作，和上一个比较类似 - Cython优化
+    # 如果nextstart重写了，但是oncestart没有重写，需要做的操作，和上一个比较类似 - Cython深度优化
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def oncestart_via_nextstart(self, start, end):
         # nextstart has been overridden, but oncestart has not and the code is
         # here. call the overridden nextstart
-        cdef int i
-        cdef object data, indicator
-        cdef object datas = self.datas
-        cdef object indicators = self._lineiterators[LineIterator.IndType]
+        cdef int i, j, datas_len, indicators_len
+        cdef list datas, indicators
+        
+        datas = self.datas
+        indicators = self._lineiterators[LineIterator.IndType]
+        datas_len = len(datas)
+        indicators_len = len(indicators)
+        
         for i in range(start, end):
-            for data in datas:
-                data.advance()
+            # 优化为索引访问
+            for j in range(datas_len):
+                datas[j].advance()
 
-            for indicator in indicators:
-                indicator.advance()
+            for j in range(indicators_len):
+                indicators[j].advance()
 
             self.advance()
             self.nextstart()
-    # next重写了，但是once没有重写，需要的操作 - Cython优化
+    # next重写了，但是once没有重写，需要的操作 - Cython深度优化
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def once_via_next(self, start, end):
         # Not overridden, next must be there ...
-        cdef int i
-        cdef object data, indicator
-        cdef object datas = self.datas
-        cdef object indicators = self._lineiterators[LineIterator.IndType]
+        cdef int i, j, datas_len, indicators_len
+        cdef list datas, indicators
+        
+        datas = self.datas
+        indicators = self._lineiterators[LineIterator.IndType]
+        datas_len = len(datas)
+        indicators_len = len(indicators)
+        
         for i in range(start, end):
-            for data in datas:
-                data.advance()
+            # 优化为索引访问
+            for j in range(datas_len):
+                datas[j].advance()
 
-            for indicator in indicators:
-                indicator.advance()
+            for j in range(indicators_len):
+                indicators[j].advance()
 
             self.advance()
             self.next()
