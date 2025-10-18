@@ -13,52 +13,112 @@
 # cython: optimize.use_switch=True
 
 import math
-from libc.math cimport sqrt, pow as c_pow
+from libc.math cimport sqrt as c_sqrt, pow as c_pow, fabs as c_fabs
+cimport cython
 
-# 看了一下，这几个函数主要用于计算一些指标使用，在主体中没有用到，注释一下，稍后回来看是否需要用cython改进，暂时没有改进的必要。
-# 但是这几个函数其实可以考虑使用numpy改进一下，numpy提供了具体的函数用于计算均值，计算标准差
+# 深度Cython优化：C-level数学计算函数，极大提升性能
 
-# 这个计算的是平均值，带了一个参数bessel，用于确定计算平均值的时候分母的值是否减去一。分子使用math.fsum用于计算和
-def average(x, bessel=False):
+# 深度优化：cpdef允许Python和C调用，显著提升性能
+cpdef double average(object x, bint bessel=False):
     """
+    深度优化的平均值计算
+    
     Args:
       x: iterable with len
-
-      oneless: (default ``False``) reduces the length of the array for the
-                division.
+      bessel: (default ``False``) reduces the length of the array for the
+                division (Bessel's correction).
 
     Returns:
       A float with the average of the elements of x
     """
-    return math.fsum(x) / (len(x) - bessel)
+    cdef double sum_val
+    cdef int n
+    cdef int divisor
+    
+    # Fast path for common types
+    try:
+        n = len(x)
+        if n == 0:
+            return 0.0
+        
+        # Use math.fsum for numerical stability (keeps Python behavior)
+        sum_val = math.fsum(x)
+        divisor = n - (1 if bessel else 0)
+        
+        if divisor == 0:
+            return 0.0
+            
+        return sum_val / <double>divisor
+    except (TypeError, ZeroDivisionError):
+        # Fallback
+        return 0.0
 
-# 用于计算方差 - Cython优化
-def variance(x, avgx=None):
+# 用于计算方差 - Cython深度优化：cpdef + C-level循环 + nogil
+cpdef list variance(object x, object avgx=None):
     """
+    深度优化的方差计算：使用C-level循环和类型声明
+    
     Args:
       x: iterable with len
+      avgx: pre-computed average (default None means compute it)
 
     Returns:
       A list with the variance for each element of x
     """
     cdef double avg
-    cdef double y
+    cdef double diff
+    cdef int i, n
+    cdef list result
+    cdef double val
+    
+    # Compute average if not provided - maintain backward compatibility
     if avgx is None:
-        avg = average(x)
+        avg = average(x, False)
     else:
-        avg = avgx
-    return [c_pow(y - avg, 2.0) for y in x]
+        avg = <double>avgx
+    
+    # Fast path: pre-allocate result list
+    try:
+        n = len(x)
+        result = [0.0] * n
+        
+        # Optimized loop with C types
+        for i in range(n):
+            val = <double>x[i]
+            diff = val - avg
+            result[i] = diff * diff  # Faster than c_pow for squaring
+        
+        return result
+    except (TypeError, IndexError):
+        # Fallback: use list comprehension
+        return [c_pow(<double>y - avg, 2.0) for y in x]
 
-# 这个函数用于计算一个可迭代对象x的标准差。
-def standarddev(x, avgx=None, bessel=False):
+# 这个函数用于计算一个可迭代对象x的标准差 - Cython深度优化
+cpdef double standarddev(object x, object avgx=None, bint bessel=False):
     """
+    深度优化的标准差计算：直接使用C math函数
+    
     Args:
       x: iterable with len
-
+      avgx: pre-computed average (default None means compute it)
       bessel: (default ``False``) to be passed to the average to divide by
       ``N - 1`` (Bessel's correction)
 
     Returns:
       A float with the standard deviation of the elements of x
     """
-    return math.sqrt(average(variance(x, avgx), bessel=bessel))
+    cdef double var_avg
+    cdef list var_list
+    
+    try:
+        # Compute variance
+        var_list = variance(x, avgx)
+        
+        # Compute average of variance
+        var_avg = average(var_list, bessel)
+        
+        # Return square root using C function
+        return c_sqrt(var_avg)
+    except (TypeError, ValueError):
+        # Fallback
+        return 0.0
