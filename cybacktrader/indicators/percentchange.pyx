@@ -28,5 +28,19 @@ class PercentChange(Indicator):
     params = (('period', 30),)
 
     def __init__(self):
+        # 深度优化：保持表达式接口但优化 once 路径
         self.lines.pctchange = self.data / self.data(-self.p.period) - 1.0
         super(PercentChange, self).__init__()
+
+    def once(self, start, end):
+        # Cython深度优化：基于 C 循环计算 pctchange
+        cdef int i, period
+        cdef double[:] dst = self.lines.pctchange.array
+        cdef double[:] cur = self.data.array
+        cdef double[:] prev = self.data.array  # 复用同一数组，但用偏移访问
+        cdef double denom
+        period = self.p.period
+
+        for i in range(start, end):
+            denom = prev[i - period]
+            dst[i] = (cur[i] / denom - 1.0) if denom != 0.0 else 0.0
