@@ -1,11 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; py-indent-offset:4 -*-
 
-# Cython性能优化标记（保守设置）
+# Cython深度性能优化标记（完整版）
 # cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# cython: nonecheck=False
+# cython: initializedcheck=False
 # cython: infer_types=True
+# cython: optimize.unpack_method_calls=True
+# cython: optimize.use_switch=True
 
 import cybacktrader as bt
+
+# Cython imports for C-level optimization
+cimport cython
 
 # 创建不同的SIGNAL类型
 (
@@ -37,13 +47,17 @@ SignalTypes = [
     SIGNAL_SHORTEXIT, SIGNAL_SHORTEXIT_INV, SIGNAL_SHORTEXIT_ANY
 ]
 
-# 继承指标，创建一个signal指标
+# 继承指标，创建一个signal指标 - Cython深度优化
 class Signal(bt.Indicator):
     # 信号类型
     SignalTypes = SignalTypes
     # 创建了一个signal的line
     lines = ('signal',)
-    # 初始化
+    # 初始化 - Cython深度优化
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def __init__(self):
-        self.lines.signal = self.data0.lines[0]
-        self.plotinfo.plotmaster = getattr(self.data0, '_clock', self.data0)
+        cdef object data0 = self.data0
+        
+        self.lines.signal = data0.lines[0]
+        self.plotinfo.plotmaster = getattr(data0, '_clock', data0)
