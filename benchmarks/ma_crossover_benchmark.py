@@ -26,14 +26,68 @@ from matplotlib import rcParams
 import warnings
 warnings.filterwarnings('ignore')
 
-# 添加项目根目录到路径（用于导入cybacktrader）
+# 优先使用已安装的 cybacktrader，只有在找不到时才从源码导入
 from pathlib import Path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+try:
+    import cybacktrader
+    # 如果能成功导入，检查是否是从 site-packages 导入的
+    if 'site-packages' not in cybacktrader.__file__:
+        # 如果是从源码目录导入的，移除源码路径并重新导入
+        import importlib
+        if str(Path(__file__).parent.parent) in sys.path:
+            sys.path.remove(str(Path(__file__).parent.parent))
+        importlib.reload(cybacktrader)
+except ImportError:
+    # 如果找不到已安装的包，则从源码导入
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.append(str(project_root))
 
-# 设置中文字体
-rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
-rcParams['axes.unicode_minus'] = False
+# 设置跨平台兼容的字体配置
+def setup_matplotlib_fonts():
+    """配置 matplotlib 字体，支持 Windows、Ubuntu 和 macOS"""
+    import platform
+    import matplotlib.font_manager as fm
+    
+    # 获取系统可用字体
+    available_fonts = set(f.name for f in fm.fontManager.ttflist)
+    
+    # 定义不同平台的中文字体优先级
+    font_candidates = {
+        'Windows': ['Microsoft YaHei', 'SimHei', 'SimSun', 'KaiTi'],
+        'Darwin': ['PingFang SC', 'Heiti SC', 'STHeiti', 'Arial Unicode MS'],  # macOS
+        'Linux': ['Noto Sans CJK SC', 'Noto Sans CJK JP', 'WenQuanYi Micro Hei', 
+                  'WenQuanYi Zen Hei', 'Droid Sans Fallback', 'AR PL UMing CN', 
+                  'AR PL UKai CN', 'DejaVu Sans']
+    }
+    
+    system = platform.system()
+    candidates = font_candidates.get(system, [])
+    
+    # 找到可用的中文字体
+    cjk_available = [f for f in candidates if f in available_fonts]
+    
+    if cjk_available:
+        # 如果找到中文字体，将其放在最前面
+        rcParams['font.sans-serif'] = cjk_available + ['DejaVu Sans', 'Arial', 'sans-serif']
+        print(f"使用中文字体: {cjk_available[0]}")
+    else:
+        # 如果没有找到，尝试使用通用字体
+        print("警告: 未找到中文字体，中文可能显示为方块")
+        print("可用字体列表（前20个）:")
+        for i, font in enumerate(sorted(list(available_fonts))[:20]):
+            print(f"  - {font}")
+        rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'sans-serif']
+    
+    rcParams['font.family'] = 'sans-serif'
+    rcParams['mathtext.fontset'] = 'dejavusans'
+    rcParams['text.usetex'] = False
+    
+    # 解决负号显示问题
+    rcParams['axes.unicode_minus'] = False
+
+# 应用字体配置
+setup_matplotlib_fonts()
 
 
 def get_data_hash(n_rows, seed=42):

@@ -35,9 +35,10 @@ from pathlib import Path
 from datetime import datetime
 import gc
 
-# 添加项目根目录到路径
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+# 注意：不要将项目根目录添加到 sys.path，以确保使用已安装的 cybacktrader 包
+# 而不是源码目录中的未编译版本
+# project_root = Path(__file__).parent.parent
+# sys.path.insert(0, str(project_root))
 
 # 尝试导入line_profiler
 try:
@@ -108,6 +109,11 @@ def run_strategy_with_profiling(module_name, data_file, profile_type='function',
             import backtrader as bt
         elif module_name == 'cybacktrader':
             import cybacktrader as bt
+            # 检查关键类是否存在
+            if not hasattr(bt, 'Cerebro'):
+                print(f"[失败] cybacktrader 模块不完整，缺少 Cerebro 类")
+                print(f"       请先运行: pip install -e . 来安装 cybacktrader")
+                return None
         else:
             raise ValueError(f"未知模块: {module_name}")
     except ImportError as e:
@@ -165,45 +171,75 @@ def run_strategy_with_profiling(module_name, data_file, profile_type='function',
         if compare_metric == 'time':
             if profile_type == 'function':
                 # 函数级时间分析（同时收集内存数据）
-                pr = cProfile.Profile()
+                pr = None
                 
-                # 确保之前的profiler已经禁用
                 try:
+                    # 确保之前的profiler已经完全禁用
                     import sys
                     if hasattr(sys, 'getprofile') and sys.getprofile() is not None:
                         sys.setprofile(None)
-                except:
-                    pass
-                
-                # 同时启动内存监控
-                process = psutil.Process(os.getpid())
-                gc.collect()
-                memory_before = process.memory_info().rss / 1024 / 1024
-                tracemalloc.start()
-                
-                pr.enable()
-                
-                start_time = time.time()
-                run_strategy()
-                execution_time = time.time() - start_time
-                
-                pr.disable()
-                
-                # 获取内存数据
-                current, peak = tracemalloc.get_traced_memory()
-                tracemalloc.stop()
-                memory_after = process.memory_info().rss / 1024 / 1024
-                
-                stats = pstats.Stats(pr)
-                stats.sort_stats('cumulative')
-                
-                result['execution_time'] = execution_time
-                result['stats'] = stats
-                result['memory_used_mb'] = memory_after - memory_before
-                result['memory_peak_mb'] = peak / 1024 / 1024
-                result['success'] = True
-                
-                gc.collect()
+                    if hasattr(sys, 'gettrace') and sys.gettrace() is not None:
+                        sys.settrace(None)
+                    
+                    # 停止可能残留的 tracemalloc
+                    if tracemalloc.is_tracing():
+                        tracemalloc.stop()
+                    
+                    # 强制垃圾回收
+                    gc.collect()
+                    time.sleep(0.1)  # 给系统一点时间完全清理
+                    
+                    # 同时启动内存监控
+                    process = psutil.Process(os.getpid())
+                    memory_before = process.memory_info().rss / 1024 / 1024
+                    tracemalloc.start()
+                    
+                    # 创建新的 profiler
+                    pr = cProfile.Profile()
+                    pr.enable()
+                    
+                    start_time = time.time()
+                    run_strategy()
+                    execution_time = time.time() - start_time
+                    
+                    pr.disable()
+                    
+                    # 获取内存数据
+                    current, peak = tracemalloc.get_traced_memory()
+                    tracemalloc.stop()
+                    memory_after = process.memory_info().rss / 1024 / 1024
+                    
+                    stats = pstats.Stats(pr)
+                    stats.sort_stats('cumulative')
+                    
+                    result['execution_time'] = execution_time
+                    result['stats'] = stats
+                    result['memory_used_mb'] = memory_after - memory_before
+                    result['memory_peak_mb'] = peak / 1024 / 1024
+                    result['success'] = True
+                    
+                finally:
+                    # 确保清理
+                    if pr is not None:
+                        try:
+                            pr.disable()
+                        except:
+                            pass
+                    
+                    try:
+                        import sys
+                        sys.setprofile(None)
+                        sys.settrace(None)
+                    except:
+                        pass
+                    
+                    if tracemalloc.is_tracing():
+                        try:
+                            tracemalloc.stop()
+                        except:
+                            pass
+                    
+                    gc.collect()
                 
             elif profile_type == 'line' and LINE_PROFILER_AVAILABLE:
                 lp = LineProfiler()
