@@ -52,7 +52,7 @@ class Momentum(Indicator):
         self.l.momentum = self.data - self.data(-self.p.period)
         super(Momentum, self).__init__()
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：momentum = data - data_period
         cdef int i, period
         cdef double[:] dst = self.lines.momentum.array
@@ -94,7 +94,7 @@ class MomentumOscillator(Indicator):
         self.l.momosc = 100.0 * (self.data / self.data(-self.p.period))
         super(MomentumOscillator, self).__init__()
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：momosc = 100 * data / data_period
         cdef int i, period
         cdef double[:] dst = self.lines.momosc.array
@@ -129,7 +129,7 @@ class RateOfChange(Indicator):
         self.l.roc = (self.data - dperiod) / dperiod
         super(RateOfChange, self).__init__()
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：roc = (data - data_period) / data_period
         cdef int i, period
         cdef double[:] dst = self.lines.roc.array

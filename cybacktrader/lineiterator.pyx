@@ -425,13 +425,13 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
         for line in self.lines:
             line.oncebinding()
 
-    def preonce(self, start, end):
+    def preonce(self, int start, int end):
         pass
 
-    def oncestart(self, start, end):
+    def oncestart(self, int start, int end):
         self.once(start, end)
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         pass
 
     def prenext(self):
@@ -467,7 +467,7 @@ class LineIterator(with_metaclass(MetaLineIterator, LineSeries)):
     def _plotinit(self):
         pass
 
-    def qbuffer(self, savemem=0):
+    def qbuffer(self, int savemem=0):
         # 缓存相关操作 - Cython优化
         cdef object line, obj, data
         

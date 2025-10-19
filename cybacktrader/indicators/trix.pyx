@@ -75,7 +75,7 @@ class TrixSignal(Trix):
 
         self.l.signal = self.p._movav(self.lines[0], period=self.p.sigperiod)
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：trix = 100 * (ema3 / ema3(-roc) - 1)
         cdef int i, s = start, e = end
         cdef int roc = self.p._rocperiod

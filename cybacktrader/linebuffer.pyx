@@ -869,7 +869,7 @@ class LineActions(with_metaclass(MetaLineActions, LineBuffer)):
         """获取指标值，返回的是空的列表"""
         return []
 
-    def qbuffer(self, savemem=0):
+    def qbuffer(self, int savemem=0):
         """设置最小的缓存量"""
         super(LineActions, self).qbuffer(savemem=savemem)
         for data in self._datas:

@@ -48,7 +48,7 @@ class OperationN(PeriodN):
     def next(self):
         self.line[0] = self.func(self.data.get(size=self.p.period))
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：使用类型声明
         cdef int i, period
         
@@ -104,7 +104,7 @@ class Highest(OperationN):
     lines = ('highest',)
     func = max
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：窗口内最大值（typed memoryviews + nogil）
         cdef int i, j, period, s = start, e = end
         cdef double val, m
@@ -134,7 +134,7 @@ class Lowest(OperationN):
     lines = ('lowest',)
     func = min
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：窗口内最小值（typed memoryviews + nogil）
         cdef int i, j, period, s = start, e = end
         cdef double val, m
@@ -194,7 +194,7 @@ class SumN(OperationN):
     lines = ('sumn',)
     func = math.fsum
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：滚动求和（typed memoryviews + nogil）
         cdef int i, j, period, s = start, e = end
         cdef double sum_val, old_val, new_val
@@ -229,7 +229,7 @@ class AnyN(OperationN):
     lines = ('anyn',)
     func = any
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：窗口内任一非零（typed memoryviews + nogil）
         cdef int i, j, period, s = start, e = end
         cdef double[:] src = self.data.array
@@ -259,7 +259,7 @@ class AllN(OperationN):
     lines = ('alln',)
     func = all
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：窗口内全非零（typed memoryviews + nogil）
         cdef int i, j, period, s = start, e = end
         cdef double[:] src = self.data.array
@@ -399,7 +399,7 @@ class Accum(Indicator):
     def next(self):
         self.line[0] = self.line[-1] + self.data[0]
 
-    def oncestart(self, start, end):
+    def oncestart(self, int start, int end):
         # Cython深度优化：累积求和（typed memoryviews）
         cdef int i
         cdef double prev
@@ -411,7 +411,7 @@ class Accum(Indicator):
             prev = prev + src_mv[i]
             dst_mv[i] = prev
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：累积求和（typed memoryviews）
         cdef int i, s = start, e = end
         cdef double prev
@@ -441,7 +441,7 @@ class Average(PeriodN):
         self.line[0] = \
             math.fsum(self.data.get(size=self.p.period)) / self.p.period
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：使用滚动求和算法（typed memoryviews）
         cdef int i, j, s = start, e = end
         cdef int period = self.p.period
@@ -500,11 +500,11 @@ class ExponentialSmoothing(Average):
     def next(self):
         self.line[0] = self.line[-1] * self.alpha1 + self.data[0] * self.alpha
 
-    def oncestart(self, start, end):
+    def oncestart(self, int start, int end):
         # Fetch the seed value from the base class calculation
         super(ExponentialSmoothing, self).once(start, end)
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：EMA计算（typed memoryviews）
         cdef int i, s = start, e = end
         cdef double prev, alpha, alpha1
@@ -553,7 +553,7 @@ class ExponentialSmoothingDynamic(ExponentialSmoothing):
         self.line[0] = \
             self.line[-1] * self.alpha1[0] + self.data[0] * self.alpha[0]
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：EMA动态计算（typed memoryviews）
         cdef int i, s = start, e = end
         cdef double prev
@@ -598,7 +598,7 @@ class WeightedAverage(PeriodN):
         dataweighted = map(operator.mul, data, self.p.weights)
         self.line[0] = self.p.coef * math.fsum(dataweighted)
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：加权平均计算（typed memoryviews + C循环累加）
         cdef int i, j, period
         cdef double coef, sum_val

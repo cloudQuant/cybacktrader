@@ -40,7 +40,7 @@ class PercentChange(Indicator):
         self.lines.pctchange = self.data / self.data(-self.p.period) - 1.0
         super(PercentChange, self).__init__()
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：基于 C 循环计算 pctchange
         cdef int i, period
         cdef double[:] dst = self.lines.pctchange.array

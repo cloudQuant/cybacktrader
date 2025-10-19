@@ -347,7 +347,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return self._feed
 
     # 缓存数据的量 - Cython优化
-    def qbuffer(self, savemem=0, replaying=False):
+    def qbuffer(self, int savemem=0, bint replaying=False):
         cdef object line
         extrasize = self.resampling or replaying
         for line in self.lines:

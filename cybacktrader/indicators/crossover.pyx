@@ -33,13 +33,13 @@ class NonZeroDifference(Indicator):
         d = self.data0[0] - self.data1[0]
         self.l.nzd[0] = d if d else self.l.nzd[-1]
 
-    def oncestart(self, start, end):
+    def oncestart(self, int start, int end):
         cdef double d0, d1
         d0 = self.data0.array[start]
         d1 = self.data1.array[start]
         self.line.array[start] = d0 - d1
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         cdef int i
         cdef double prev, d
         d0array = self.data0.array

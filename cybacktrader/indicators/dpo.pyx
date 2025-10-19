@@ -58,7 +58,7 @@ class DetrendedPriceOscillator(Indicator):
 
         super(DetrendedPriceOscillator, self).__init__()
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：使用 typed memoryviews 与 C 循环
         cdef int i
         cdef int shift = self.p.period // 2 - 1  # 对应 ma(-period//2 + 1)
