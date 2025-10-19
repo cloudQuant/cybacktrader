@@ -17,6 +17,80 @@ from copy import copy
 # Cython imports for C-level optimization
 cimport cython
 
+# Internal C-level helper functions for performance
+@cython.cdivision(True)
+@cython.boundscheck(False)
+cdef inline void _calc_position_delta(
+    long oldsize,
+    long delta,
+    double old_price,
+    double new_price,
+    long* out_newsize,
+    long* out_opened,
+    long* out_closed,
+    double* out_price
+) noexcept nogil:
+    """Fast C-level calculation of position updates
+    
+    Args:
+        oldsize: current position size
+        delta: size change (+ for buy, - for sell)
+        old_price: current position price
+        new_price: price of the transaction
+        out_newsize: output - new position size
+        out_opened: output - contracts opened
+        out_closed: output - contracts closed
+        out_price: output - new position price
+    """
+    cdef long newsize = oldsize + delta
+    cdef long opened, closed
+    cdef double result_price
+    
+    out_newsize[0] = newsize
+    
+    # Position closed to zero
+    if newsize == 0:
+        opened = 0
+        closed = delta
+        result_price = 0.0
+    # Opening from zero
+    elif oldsize == 0:
+        opened = delta
+        closed = 0
+        result_price = new_price
+    # Existing long position
+    elif oldsize > 0:
+        if delta > 0:  # Increased long
+            opened = delta
+            closed = 0
+            result_price = (old_price * oldsize + delta * new_price) / newsize
+        elif newsize > 0:  # Reduced long
+            opened = 0
+            closed = delta
+            result_price = old_price
+        else:  # Reversed to short
+            opened = newsize
+            closed = -oldsize
+            result_price = new_price
+    # Existing short position
+    else:  # oldsize < 0
+        if delta < 0:  # Increased short
+            opened = delta
+            closed = 0
+            result_price = (old_price * oldsize + delta * new_price) / newsize
+        elif newsize < 0:  # Reduced short
+            opened = 0
+            closed = delta
+            result_price = old_price
+        else:  # Reversed to long
+            opened = newsize
+            closed = -oldsize
+            result_price = new_price
+    
+    out_opened[0] = opened
+    out_closed[0] = closed
+    out_price[0] = result_price
+
 # Position类，保持和更新持仓的大小和价格，和其他的任何资产没有关系，它仅仅保存大小和价格
 class Position(object):
     """
@@ -153,7 +227,7 @@ class Position(object):
     def pseudoupdate(self, size, price):
         return Position(self.size, self.price).update(size, price)
 
-    # 更新size和price
+    # 更新size和price - 使用内部cdef函数优化
     def update(self, size, price, dt=None):
         """
         Updates the current position and returns the updated size, price and
@@ -203,57 +277,23 @@ class Position(object):
         self.datetime = dt  # record datetime update (datetime.datetime)
         # 原始的价格
         self.price_orig = self.price
-        # 旧地持仓大小
+        
+        # 使用快速C级计算（需求6优化）
         cdef long oldsize = self.size
         cdef long delta = size
-        cdef long opened, closed
         cdef double price_d = price
-        cdef double newprice
-
-        # 新地持仓大小
-        self.size = oldsize + delta
-        # 如果size是0的话
-        if not self.size:
-            # Update closed existing position
-            # 更新开仓、平仓和价格
-            opened, closed = 0, delta
-            self.price = 0.0
-        # 如果position的持仓是0的话，需要开仓size的量
-        elif not oldsize:
-            # Update opened a position from 0
-            opened, closed = delta, 0
-            self.price = price_d
-        # 如果原先position的持仓是0的话
-        elif oldsize > 0:  # existing "long" position updated
-            # 如果增加的仓位大于0,那么就需要新开仓，并且计算平均持仓价格
-            if delta > 0:  # increased position
-                opened, closed = delta, 0
-                newprice = (self.price * oldsize + delta * price_d) / self.size
-                self.price = newprice
-            # 如果平掉size之后，持仓仍然大于0,那么就平仓size
-            elif self.size > 0:  # reduced position
-                opened, closed = 0, delta
-                # self.price = self.price
-            # 其他情况下，就需要开仓self.size,平仓-oldsize
-            else:  # self.size < 0 # reversed position form plus to minus
-                opened, closed = self.size, -oldsize
-                self.price = price_d
-        # 原有的持仓是负数
-        else:  # oldsize < 0 - existing short position updated
-            # 如果新增加的仓位也是负数，那么就新开size
-            if delta < 0:  # increased position
-                opened, closed = delta, 0
-                newprice = (self.price * oldsize + delta * price_d) / self.size
-                self.price = newprice
-            # 如果当前self.size小于0,平仓size
-            elif self.size < 0:  # reduced position
-                opened, closed = 0, delta
-                # self.price = self.price
-            # 其他情况下，就需要开仓self.size,平仓-oldsize
-            else:  # self.size > 0 - reversed position from minus to plus
-                opened, closed = self.size, -oldsize
-                self.price = price_d
-        # 开仓和平仓量
+        cdef long newsize, opened, closed
+        cdef double new_price_result
+        
+        # 调用内部cdef函数进行快速计算
+        _calc_position_delta(
+            oldsize, delta, self.price, price_d,
+            &newsize, &opened, &closed, &new_price_result
+        )
+        
+        # 更新状态
+        self.size = newsize
+        self.price = new_price_result
         self.upopened = opened
         self.upclosed = closed
 

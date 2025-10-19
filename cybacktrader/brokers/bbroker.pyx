@@ -810,11 +810,17 @@ class BackBroker(bt.BrokerBase):
 
         return self.submit(order, check=_checksubmit)
 
-    # 执行订单
+    # 执行订单 - Cython优化：添加内部类型声明
     def _execute(self, order, ago=None, price=None, cash=None, position=None,
                  dtcoc=None):
         # ago = None is used a flag for pseudo execution
         # print(f"订单的大小:{order.executed.remsize}")
+        # Cython类型声明
+        cdef long size, psize, opened, closed
+        cdef double price_d, pprice, pprice_orig, pnl, closedvalue, closedcomm
+        cdef double openedvalue, opencash, closecash, openedcomm
+        cdef object comminfo, cinfocomp, data
+        
         # 如果ago不是None，并且price是None的话，不操作，返回
         if ago is not None and price is None:
             return  # no psuedo exec no price - no execution

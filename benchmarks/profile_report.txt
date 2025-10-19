@@ -1,0 +1,108 @@
+         39533 function calls (39395 primitive calls) in 0.611 seconds
+
+   Ordered by: cumulative time
+   List reduced from 474 to 100 due to restriction <100>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.510    0.510    0.611    0.611 profile_cybacktrader.py:67(run_test)
+        1    0.005    0.005    0.059    0.059 profile_cybacktrader.py:38(generate_test_data)
+        1    0.000    0.000    0.045    0.045 _decorators.py:325(wrapper)
+        1    0.000    0.000    0.045    0.045 generic.py:3797(to_csv)
+        1    0.000    0.000    0.045    0.045 format.py:965(to_csv)
+        1    0.000    0.000    0.044    0.044 csvs.py:246(save)
+        1    0.000    0.000    0.042    0.042 csvs.py:272(_save)
+        1    0.000    0.000    0.042    0.042 csvs.py:305(_save_body)
+        1    0.011    0.011    0.042    0.042 csvs.py:315(_save_chunk)
+        5    0.000    0.000    0.031    0.006 base.py:7770(get_values_for_csv)
+        1    0.000    0.000    0.030    0.030 frame.py:1400(_get_values_for_csv)
+        1    0.000    0.000    0.030    0.030 managers.py:459(get_values_for_csv)
+        1    0.000    0.000    0.030    0.030 managers.py:317(apply)
+        3    0.000    0.000    0.030    0.010 blocks.py:775(get_values_for_csv)
+     9980    0.024    0.000    0.029    0.000 profile_cybacktrader.py:30(next)
+        6    0.024    0.004    0.024    0.004 {method 'astype' of 'numpy.ndarray' objects}
+     1872    0.004    0.000    0.011    0.000 copy.py:62(copy)
+        1    0.000    0.000    0.009    0.009 frame.py:694(__init__)
+        1    0.000    0.000    0.009    0.009 construction.py:423(dict_to_mgr)
+        1    0.000    0.000    0.009    0.009 construction.py:96(arrays_to_mgr)
+        7    0.000    0.000    0.009    0.001 construction.py:517(sanitize_array)
+        1    0.000    0.000    0.008    0.008 construction.py:596(_homogenize)
+      7/5    0.000    0.000    0.007    0.001 <frozen importlib._bootstrap>:1349(_find_and_load)
+      7/5    0.000    0.000    0.007    0.001 <frozen importlib._bootstrap>:1304(_find_and_load_unlocked)
+      7/5    0.000    0.000    0.007    0.001 <frozen importlib._bootstrap>:911(_load_unlocked)
+        1    0.001    0.001    0.006    0.006 profile_cybacktrader.py:22(__init__)
+    18/12    0.001    0.000    0.006    0.001 <frozen importlib._bootstrap>:480(_call_with_frames_removed)
+        2    0.000    0.000    0.006    0.003 cast.py:123(maybe_convert_platform)
+        2    0.006    0.003    0.006    0.003 cast.py:1579(construct_1d_object_array_from_listlike)
+        1    0.005    0.005    0.006    0.006 datetimes.py:744(_format_native_types)
+        3    0.000    0.000    0.005    0.002 __init__.py:172(__getattr__)
+        2    0.000    0.000    0.005    0.003 {built-in method builtins.__import__}
+     1872    0.002    0.000    0.005    0.000 copy.py:248(_reconstruct)
+      4/3    0.000    0.000    0.005    0.002 <frozen importlib._bootstrap_external>:1326(exec_module)
+      4/3    0.004    0.001    0.005    0.002 {built-in method _imp.exec_dynamic}
+        2    0.002    0.001    0.002    0.001 cast.py:1156(maybe_infer_to_datetimelike)
+        1    0.000    0.000    0.002    0.002 common.py:664(get_handle)
+        3    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:1020(exec_module)
+        7    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:806(module_from_spec)
+        2    0.000    0.000    0.001    0.001 common.py:1165(_is_binary_mode)
+        1    0.000    0.000    0.001    0.001 common.py:1186(_get_binary_io_classes)
+        4    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:1318(create_module)
+        1    0.000    0.000    0.001    0.001 _optional.py:85(import_optional_dependency)
+        1    0.000    0.000    0.001    0.001 __init__.py:71(import_module)
+        1    0.000    0.000    0.001    0.001 <frozen importlib._bootstrap>:1375(_gcd_import)
+     1872    0.001    0.000    0.001    0.000 {method '__reduce_ex__' of 'object' objects}
+     1909    0.001    0.000    0.001    0.000 {built-in method builtins.hasattr}
+        3    0.000    0.000    0.001    0.000 {built-in method builtins.exec}
+     1872    0.001    0.000    0.001    0.000 {method 'update' of 'dict' objects}
+        2    0.000    0.000    0.001    0.000 __init__.py:1(<module>)
+        4    0.001    0.000    0.001    0.000 {built-in method _imp.create_dynamic}
+     1872    0.001    0.000    0.001    0.000 copyreg.py:98(__newobj__)
+4112/4111    0.001    0.000    0.001    0.000 {built-in method builtins.isinstance}
+        2    0.000    0.000    0.001    0.000 datetimes.py:329(_from_sequence_not_strict)
+        1    0.000    0.000    0.001    0.001 datetimes.py:320(__new__)
+        2    0.000    0.000    0.001    0.000 datetimes.py:2184(_sequence_to_dt64)
+     3768    0.001    0.000    0.001    0.000 {method 'get' of 'dict' objects}
+     3892    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
+        7    0.000    0.000    0.001    0.000 <frozen importlib._bootstrap>:1240(_find_spec)
+        1    0.000    0.000    0.000    0.000 datetimes.py:2354(objects_to_datetime64)
+        2    0.000    0.000    0.000    0.000 base.py:1469(_get_values_for_csv)
+        7    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1551(find_spec)
+        7    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1522(_get_spec)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1093(get_code)
+        1    0.000    0.000    0.000    0.000 managers.py:2121(create_block_manager_from_column_arrays)
+      3/1    0.000    0.000    0.000    0.000 mabase.py:120(__new__)
+        1    0.000    0.000    0.000    0.000 managers.py:2190(_form_blocks)
+       10    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1624(find_spec)
+        6    0.000    0.000    0.000    0.000 {built-in method numpy.array}
+        4    0.000    0.000    0.000    0.000 missing.py:101(isna)
+        4    0.000    0.000    0.000    0.000 missing.py:184(_isna)
+     1892    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x919f40}
+        1    0.000    0.000    0.000    0.000 csvs.py:59(__init__)
+        4    0.000    0.000    0.000    0.000 missing.py:261(_isna_array)
+        1    0.000    0.000    0.000    0.000 csvs.py:153(_initialize_columns)
+     1889    0.000    0.000    0.000    0.000 {built-in method builtins.issubclass}
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:782(_compile_bytecode)
+        3    0.000    0.000    0.000    0.000 {built-in method marshal.loads}
+        1    0.000    0.000    0.000    0.000 base.py:475(__new__)
+    70/15    0.000    0.000    0.000    0.000 <frozen abc>:121(__subclasscheck__)
+    70/15    0.000    0.000    0.000    0.000 {built-in method _abc._abc_subclasscheck}
+       28    0.000    0.000    0.000    0.000 <frozen abc>:117(__instancecheck__)
+       28    0.000    0.000    0.000    0.000 {built-in method _abc._abc_instancecheck}
+        7    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:416(__enter__)
+        1    0.000    0.000    0.000    0.000 __init__.py:326(__getattr__)
+        3    0.000    0.000    0.000    0.000 managers.py:2246(_stack_arrays)
+        1    0.000    0.000    0.000    0.000 common.py:304(_get_filepath_or_buffer)
+        1    0.000    0.000    0.000    0.000 datetimelike.py:2399(_is_dates_only)
+      122    0.000    0.000    0.000    0.000 <frozen codecs>:322(decode)
+        1    0.000    0.000    0.000    0.000 indexing.py:1176(__getitem__)
+       28    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:145(_path_stat)
+       29    0.000    0.000    0.000    0.000 {built-in method posix.stat}
+        7    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:304(acquire)
+        1    0.000    0.000    0.000    0.000 indexing.py:1719(_getitem_axis)
+        1    0.000    0.000    0.000    0.000 indexing.py:1756(_get_slice_axis)
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap_external>:1214(get_data)
+        7    0.000    0.000    0.000    0.000 construction.py:481(ensure_wrapped_if_datetimelike)
+        1    0.000    0.000    0.000    0.000 generic.py:4361(_slice)
+        7    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:733(_init_module_attrs)
+        1    0.000    0.000    0.000    0.000 {built-in method _io.open}
+
+

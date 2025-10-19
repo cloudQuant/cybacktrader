@@ -10,16 +10,19 @@ from Cython.Build import cythonize
 import numpy as np
 import os
 
-# Compiler directives - enable safety checks for debugging
+# Compiler directives - Balanced performance and safety mode
 compiler_directives = {
     'language_level': '3',
-    'boundscheck': True,   # Enable bounds checking for safety
-    'wraparound': True,    # Enable negative indexing
-    'cdivision': False,    # Use Python division semantics for safety
-    'initializedcheck': True,
-    'nonecheck': True,
+    'boundscheck': True,    # Keep bounds checking for safety (critical for array access)
+    'wraparound': True,     # Keep negative indexing support (used extensively)
+    'cdivision': True,      # Use C division for performance (safe)
+    'initializedcheck': False,  # Disable initialization checks (low risk)
+    'nonecheck': False,     # Disable None checks for performance (controlled risk)
     'embedsignature': True,
     'profile': False,
+    'infer_types': True,    # Enable type inference
+    'optimize.use_switch': True,  # Use switch statements
+    'optimize.unpack_method_calls': True,  # Optimize method calls
 }
 
 # C++ compiler settings
