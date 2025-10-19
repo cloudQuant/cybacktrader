@@ -2,11 +2,33 @@
 
 **Cython-accelerated, drop-in compatible interface for backtrader**
 
+## ⚡ 性能对比
+
+![Performance Comparison](benchmarks/performance_comparison.png)
+
+### 实测性能数据
+
+| 实现方式 | 平均时间 | 加速比 | 说明 |
+|---------|---------|--------|------|
+| backtrader (CPython 3.13) | 0.492秒 | 1.00x | 基准 |
+| **cybacktrader (CPython 3.13)** | **0.443秒** | **1.11x** 🚀 | Cython优化 |
+| backtrader (PyPy 7.3.15) | 0.409秒* | 1.20x* | JIT编译（*第3轮最佳） |
+
+**测试环境：** 10,000行数据，5/20日均线交叉策略，3轮测试取平均  
+**详细分析：** [性能对比分析报告](docs/性能对比分析报告.md)
+
+### 关键发现
+
+- ✅ **cybacktrader提供稳定的11%性能提升**，无预热开销
+- ✅ **100% API兼容**，无需修改任何代码
+- ✅ **PyPy可提供最高20%提升**，但需要JIT预热时间
+- ⚠️ **性能瓶颈在架构层面**（Strategy.next()逐Bar调用），理论上限约2-3x
+
 ## 项目简介
 
 `cybacktrader` 是对知名 Python 量化回测框架 [backtrader](https://github.com/mementum/backtrader) 的 Cython 重构版本。主要目标：
 
-- **性能提升 10 倍以上**：通过 Cython 静态类型优化和编译加速核心数据路径
+- **性能提升**：通过 Cython 静态类型优化和编译加速，实测提升11%
 - **完全兼容**：API 与 `backtrader` 100% 兼容，只需替换导入语句
 - **代码结构一致**：文件名、类名、函数接口完全对应，便于迁移
 - **渐进式优化**：优先优化性能热点，保证稳定性
