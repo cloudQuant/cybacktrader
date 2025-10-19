@@ -407,7 +407,7 @@ class LineBuffer(LineSingle):
                     array_append(value)
 
     # 向后移动一位 - Cython深度优化
-    def backwards(self, int size=1, bint force=False):
+    def backwards(self, int size=1, force=False):
         """ Moves the logical index backwards and reduces the buffer as much as needed
 
         Keyword Args:

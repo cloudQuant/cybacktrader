@@ -318,7 +318,7 @@ class Lines(object):
         # 给self设置属性，self._getlinealias(line)返回的是line的名字，value是设置的值
         setattr(self, self._getlinealias(line), value)
 
-    def forward(self, value=NAN, int size=1):
+    def forward(self, value=NAN, size=1):
         """
         Proxy line operation
         """
@@ -328,7 +328,7 @@ class Lines(object):
         for i in range(n):
             lines[i].forward(value, size=size)
 
-    def backwards(self, int size=1, bint force=False):
+    def backwards(self, int size=1, force=False):
         """
         Proxy line operation
         """
@@ -338,7 +338,7 @@ class Lines(object):
         for i in range(n):
             lines[i].backwards(size, force=force)
 
-    def rewind(self, int size=1):
+    def rewind(self, size=1):
         """
         Proxy line operation
         """
@@ -388,7 +388,7 @@ class Lines(object):
         for i in range(n):
             lines[i].advance(size)
 
-    def buflen(self, int line=0):
+    def buflen(self, line=0):
         """
         Proxy line operation
         """
