@@ -116,7 +116,7 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
         raise NotImplementedError
 
     # 需要达到的最小缓存
-    def minbuffer(self, size):
+    def minbuffer(self, int size):
         """Receive notification of how large the buffer must at least be"""
         raise NotImplementedError
 
@@ -416,7 +416,7 @@ class LineMultiple(LineRoot):
             line.qbuffer(savemem=1)
 
     # 对多条line设置最小的缓存量 - Cython优化
-    def minbuffer(self, size):
+    def minbuffer(self, int size):
         cdef object line
         for line in self.lines:
             line.minbuffer(size)

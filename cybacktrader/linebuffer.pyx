@@ -963,7 +963,7 @@ class _LineDelay(LineActions):
         # 在每次next的时候通过调用a的self.ago的index的值，然后添加到self这个line上面
         self[0] = self.a[self.ago]
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # cache python dictionary lookups
         # 调用once的时候，根据a的数据,生成对应的ago前的数据形成的array
         cdef int i  # Cython类型声明
@@ -1008,7 +1008,7 @@ class _LineForward(LineActions):
     def next(self):
         self[-self.ago] = self.a[0]
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # cache python dictionary lookups
         cdef int i  # Cython类型声明
         cdef int s = start, e = end
@@ -1084,7 +1084,7 @@ class LinesOperation(LineActions):
         else:
             self[0] = self.operation(self.a, self.b[0])
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # 对line的部分数据进行操作
         # 如果b是line，就调用_once_op函数
         if self.bline:
@@ -1101,7 +1101,7 @@ class LinesOperation(LineActions):
         else:
             self._once_val_op_r(start, end)
 
-    def _once_op(self, start, end):
+    def _once_op(self, int start, int end):
         # cache python dictionary lookups
         # a和b都是line的情况下的操作
         cdef int i  # Cython类型声明
@@ -1140,7 +1140,7 @@ class LinesOperation(LineActions):
         for i in range(start, end):
             dst[i] = op(srca[i], srcb[i])
 
-    def _once_time_op(self, start, end):
+    def _once_time_op(self, int start, int end):
         # cache python dictionary lookups
         # a是line，b是时间下的操作
         cdef int i  # Cython类型声明
@@ -1153,7 +1153,7 @@ class LinesOperation(LineActions):
         for i in range(start, end):
             dst[i] = op(num2date(srca[i], tz=tz).time(), srcb)
 
-    def _once_val_op(self, start, end):
+    def _once_val_op(self, int start, int end):
         # cache python dictionary lookups
         # a是line，b是浮点数的情况下的操作，这里默认了b只能是浮点数，不能是时间
         cdef int i  # Cython类型声明
@@ -1192,7 +1192,7 @@ class LinesOperation(LineActions):
         for i in range(start, end):
             dst[i] = op(srca[i], srcb)
 
-    def _once_val_op_r(self, start, end):
+    def _once_val_op_r(self, int start, int end):
         # cache python dictionary lookups
         # 这里对a和b进行了互换，b是line，a是float或者时间，但是代码里面默认了a应该是float，逻辑判断的时候要注意。
         cdef int i  # Cython类型声明
@@ -1247,10 +1247,10 @@ class LineOwnOperation(LineActions):
         self.a = a
 
     def next(self):
-        # 对line的所有数据进行操作
+        # 对line所有数据进行操作
         self[0] = self.operation(self.a[0])
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # cache python dictionary lookups
         # 对line的一部分数据进行操作
         cdef int i  # Cython类型声明

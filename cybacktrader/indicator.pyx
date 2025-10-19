@@ -96,7 +96,7 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     csv = False
     # 当数据小于当前时间的时候，数据向前移动size - Cython深度优化
     @cython.final
-    def advance(self, size=1):
+    def advance(self, int size=1):
         # Need intercepting this call to support datas with
         # different lengths (timeframes)
         cdef int self_len, clock_len, size_val
@@ -111,7 +111,7 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     # 如果prenext重写了，但是preonce没有被重写，通常的实施方法 - Cython深度优化
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def preonce_via_prenext(self, start, end):
+    def preonce_via_prenext(self, int start, int end):
         # generic implementation if prenext is overridden but preonce is not
         cdef int i, j, datas_len, indicators_len
         cdef object data, indicator
@@ -138,7 +138,7 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     # 如果nextstart重写了，但是oncestart没有重写，需要做的操作，和上一个比较类似 - Cython深度优化
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def oncestart_via_nextstart(self, start, end):
+    def oncestart_via_nextstart(self, int start, int end):
         # nextstart has been overridden, but oncestart has not and the code is
         # here. call the overridden nextstart
         cdef int i, j, datas_len, indicators_len
@@ -162,7 +162,7 @@ class Indicator(with_metaclass(MetaIndicator, IndicatorBase)):
     # next重写了，但是once没有重写，需要的操作 - Cython深度优化
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def once_via_next(self, start, end):
+    def once_via_next(self, int start, int end):
         # Not overridden, next must be there ...
         cdef int i, j, datas_len, indicators_len
         cdef list datas, indicators

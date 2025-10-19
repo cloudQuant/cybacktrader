@@ -441,7 +441,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return float('inf')  # max date else
 
     # 把数据向前移动size
-    def advance(self, size=1, datamaster=None, ticks=True):
+    def advance(self, int size=1, datamaster=None, ticks=True):
         if ticks:
             self._tick_nullify()
 
@@ -957,6 +957,6 @@ class DataClone(AbstractDataBase):
         return True
     
     # 向前移动size的量
-    def advance(self, size=1, datamaster=None, ticks=True):
+    def advance(self, int size=1, datamaster=None, ticks=True):
         self._dlen += size
         super(DataClone, self).advance(size, datamaster, ticks=ticks)

@@ -318,7 +318,7 @@ class Lines(object):
         # 给self设置属性，self._getlinealias(line)返回的是line的名字，value是设置的值
         setattr(self, self._getlinealias(line), value)
 
-    def forward(self, value=NAN, size=1):
+    def forward(self, value=NAN, int size=1):
         """
         Proxy line operation
         """
@@ -328,7 +328,7 @@ class Lines(object):
         for i in range(n):
             lines[i].forward(value, size=size)
 
-    def backwards(self, size=1, force=False):
+    def backwards(self, int size=1, force=False):
         """
         Proxy line operation
         """
@@ -338,7 +338,7 @@ class Lines(object):
         for i in range(n):
             lines[i].backwards(size, force=force)
 
-    def rewind(self, size=1):
+    def rewind(self, int size=1):
         """
         Proxy line operation
         """
@@ -348,7 +348,7 @@ class Lines(object):
         for i in range(n):
             lines[i].rewind(size)
 
-    def extend(self, value=NAN, size=0):
+    def extend(self, value=NAN, int size=0):
         """
         Proxy line operation
         """
@@ -378,7 +378,7 @@ class Lines(object):
         for i in range(n):
             lines[i].home()
 
-    def advance(self, size=1):
+    def advance(self, int size=1):
         """
         Proxy line operation
         """
@@ -906,15 +906,15 @@ class LineSeriesStub(LineSeries):
         if not self.slave:
             super(LineSeriesStub, self).home()
 
-    def advance(self, size=1):
+    def advance(self, int size=1):
         if not self.slave:
             super(LineSeriesStub, self).advance(size)
 
-    def qbuffer(self):
+    def qbuffer(self, int savemem=0):
         if not self.slave:
-            super(LineSeriesStub, self).qbuffer()
+            super(LineSeriesStub, self).qbuffer(savemem=savemem)
 
-    def minbuffer(self, size):
+    def minbuffer(self, int size):
         if not self.slave:
             super(LineSeriesStub, self).minbuffer(size)
 
