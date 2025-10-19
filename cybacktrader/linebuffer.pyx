@@ -40,14 +40,15 @@ from libc.math cimport trunc as c_trunc, modf as c_modf, isnan, fabs
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memset
 cimport cython
-
+from cybacktrader.types cimport Price_t, Index_t, Len_t, Size_t, Volume_t, Id_t, Ts_t, Flag_t
+  
 NAN = float('NaN')
 
 # Internal C-level helper functions for performance
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double _safe_array_get(object arr, int idx) nogil:
+cdef inline double _safe_array_get(object arr, Index_t idx) nogil:
     """Fast array access helper - releases GIL for numeric operations"""
     with gil:
         return <double>arr[idx]
@@ -55,16 +56,16 @@ cdef inline double _safe_array_get(object arr, int idx) nogil:
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline void _safe_array_set(object arr, int idx, double value) nogil:
+cdef inline void _safe_array_set(object arr, Index_t idx, Price_t value) nogil:
     """Fast array set helper - releases GIL for numeric operations"""
     with gil:
         arr[idx] = value
 
 @cython.boundscheck(False)
 @cython.wraparound(False)  
-cdef inline void _batch_copy_array(object dst, object src, int start, int end):
+cdef inline void _batch_copy_array(object dst, object src, Index_t start, Index_t end):
     """Optimized batch array copy"""
-    cdef int i
+    cdef Index_t i
     cdef double[:] dstv
     cdef double[:] srcv
     try:
@@ -119,7 +120,7 @@ class LineBuffer(LineSingle):
         return self._idx
 
     # 设置_idx的值
-    def set_idx(self, idx, force=False):
+    def set_idx(self, int idx, bint force=False):
         # if QBuffer and the last position of the buffer was reached, keep
         # it (unless force) as index 0. This allows resampling
         #  - forward adds a position, but the 1st one is discarded, the 0 is
@@ -159,7 +160,7 @@ class LineBuffer(LineSingle):
         self.extension = 0
 
     # 设置缓存相关的变量
-    def qbuffer(self, savemem=0, extrasize=0):
+    def qbuffer(self, int savemem=0, int extrasize=0):
         self.mode = self.QBuffer                            # 设置具体的模式
         self.maxlen = self._minperiod                       # 设置最大的长度
         self.extrasize = extrasize                          # 设置额外的量
@@ -171,7 +172,7 @@ class LineBuffer(LineSingle):
         return []
 
     # 最小缓存
-    def minbuffer(self, size):
+    def minbuffer(self, int size):
         """The linebuffer must guarantee the minimum requested size to be
         available.
 
@@ -335,20 +336,20 @@ class LineBuffer(LineSingle):
                 binding[ago] = value
             
     # 给array设置具体的值 - Cython深度优化
-    def set(self, value, ago=0):
+    def set(self, value, int ago=0):
         """ Sets a value at position "ago" and executes any associated bindings
 
         Keyword Args:
             value (variable): value to be set
-            ago (int): Point of the array to which size will be added to return
-            the slice
+            ago (int): Point of the array to which size will be added
+            to return the slice
         """
         cdef int index, ago_int
         cdef int i, n_bindings
         cdef object binding
         
         try:
-            ago_int = <int>ago
+            ago_int = ago
             index = self.idx + ago_int
             self.array[index] = value
             
@@ -376,7 +377,7 @@ class LineBuffer(LineSingle):
         self.lencount = 0
 
     # 向前移动一位 - Cython深度优化
-    def forward(self, value=NAN, size=1):
+    def forward(self, value=NAN, int size=1):
         """ Moves the logical index foward and enlarges the buffer as much as needed
 
         Keyword Args:
@@ -387,7 +388,7 @@ class LineBuffer(LineSingle):
         cdef object array_append
         
         try:
-            size_int = <int>size
+            size_int = size
         except (TypeError, OverflowError):
             size_int = size
             
@@ -406,7 +407,7 @@ class LineBuffer(LineSingle):
                     array_append(value)
 
     # 向后移动一位 - Cython深度优化
-    def backwards(self, size=1, force=False):
+    def backwards(self, int size=1, force=False):
         """ Moves the logical index backwards and reduces the buffer as much as needed
 
         Keyword Args:
@@ -417,7 +418,7 @@ class LineBuffer(LineSingle):
         cdef object array_pop
         
         try:
-            size_int = <int>size
+            size_int = size
         except (TypeError, OverflowError):
             size_int = size
             
@@ -432,17 +433,22 @@ class LineBuffer(LineSingle):
                 array_pop()
 
     # 把idx和lencount减少size - Cython深度优化
-    def rewind(self, size=1):
+    def rewind(self, int size=1):
+        """
+        Proxy line operation
+        """
+        # 把line的idx和lencount减少size - 优化为索引循环
+        cdef int i, n = len(self.lines)
         cdef int size_int
         try:
-            size_int = <int>size
+            size_int = size
         except (TypeError, OverflowError):
             size_int = size
         self.idx -= size_int
         self.lencount -= size_int
 
     # 把idx和lencount增加size - Cython深度优化
-    def advance(self, size=1):
+    def advance(self, int size=1):
         """ Advances the logical index without touching the underlying buffer
 
         Keyword Args:
@@ -450,14 +456,14 @@ class LineBuffer(LineSingle):
         """
         cdef int size_int
         try:
-            size_int = <int>size
+            size_int = size
         except (TypeError, OverflowError):
             size_int = size
         self.idx += size_int
         self.lencount += size_int
 
     # 向前扩展 - Cython深度优化
-    def extend(self, value=NAN, size=0):
+    def extend(self, value=NAN, int size=0):
         """ Extends the underlying array with positions that the index will not reach
 
         Keyword Args:
@@ -471,7 +477,7 @@ class LineBuffer(LineSingle):
         cdef object array_append
         
         try:
-            size_int = <int>size
+            size_int = size
         except (TypeError, OverflowError):
             size_int = size
             
@@ -489,7 +495,7 @@ class LineBuffer(LineSingle):
                     array_append(value)
 
     # 增加另一条LineBuffer
-    def addbinding(self, binding):
+    def addbinding(self, object binding):
         """ Adds another line binding
 
         Keyword Args:
@@ -502,7 +508,7 @@ class LineBuffer(LineSingle):
         binding.updateminperiod(self._minperiod)
 
     # 获取从idx开始的全部数据
-    def plot(self, idx=0, size=None):
+    def plot(self, int idx=0, object size=None):
         """ Returns a slice of the array relative to the real zero of the buffer
 
         Keyword Args:
@@ -519,7 +525,7 @@ class LineBuffer(LineSingle):
         return self.getzero(idx, size or len(self))
 
     # 获取array的部分数据
-    def plotrange(self, start, end):
+    def plotrange(self, int start, int end):
         if self.useislice:
             return list(islice(self.array, start, end))
 
@@ -569,7 +575,7 @@ class LineBuffer(LineSingle):
     bind2line = bind2lines
     
     # 调用的时候返回一个自身的延迟版本或者时间周期改变版本
-    def __call__(self, ago=None):
+    def __call__(self, object ago=None):
         """Returns either a delayed version of itself in the form of a
         LineDelay object or a timeframe adapting version in regard to an ago
 
@@ -588,35 +594,35 @@ class LineBuffer(LineSingle):
         return LineDelay(self, ago)
 
     # 做一些操作
-    def _makeoperation(self, other, operation, r=False, _ownerskip=None):
+    def _makeoperation(self, object other, object operation, bint r=False, _ownerskip=None):
         return LinesOperation(self, other, operation, r=r,
                               _ownerskip=_ownerskip)
 
     # 对自身做操作
-    def _makeoperationown(self, operation, _ownerskip=None):
+    def _makeoperationown(self, object operation, _ownerskip=None):
         return LineOwnOperation(self, operation, _ownerskip=_ownerskip)
 
     # 设置时区
-    def _settz(self, tz):
+    def _settz(self, object tz):
         self._tz = tz
 
     # 返回具体的日期-时间
-    def datetime(self, ago=0, tz=None, naive=True):
+    def datetime(self, int ago=0, tz=None, bint naive=True):
         return num2date(self.array[self.idx + ago],
                         tz=tz or self._tz, naive=naive)
 
     # 返回具体的日期
-    def date(self, ago=0, tz=None, naive=True):
+    def date(self, int ago=0, tz=None, bint naive=True):
         return num2date(self.array[self.idx + ago],
                         tz=tz or self._tz, naive=naive).date()
 
     # 返回具体的时间
-    def time(self, ago=0, tz=None, naive=True):
+    def time(self, int ago=0, tz=None, bint naive=True):
         return num2date(self.array[self.idx + ago],
                         tz=tz or self._tz, naive=naive).time()
 
     # 返回时间相关的浮点数的整数部分 - Cython深度优化：使用C数学函数
-    def dt(self, ago=0):
+    def dt(self, int ago=0):
         """
         return numeric date part of datetimefloat
         """
@@ -624,7 +630,7 @@ class LineBuffer(LineSingle):
         return c_trunc(self.array[index])
 
     # 返回时间相关浮点数的小数部分 - Cython深度优化：使用C数学函数
-    def tm_raw(self, ago=0):
+    def tm_raw(self, int ago=0):
         """
         return raw numeric time part of datetimefloat
         """
@@ -637,7 +643,7 @@ class LineBuffer(LineSingle):
         return frac
 
     # 把一个日期-时间格式的时间部分转化成浮点数 - Cython优化
-    def tm(self, ago=0):
+    def tm(self, int ago=0):
         """
         return numeric time part of datetimefloat
         """
@@ -648,7 +654,7 @@ class LineBuffer(LineSingle):
         return time2num(num2date(self.array[index]).time())
 
     # 对比数据中的日期-时间是否小于数据中的日期+other的大小 - Cython深度优化
-    def tm_lt(self, other, ago=0):
+    def tm_lt(self, double other, int ago=0):
         """
         return numeric time part of datetimefloat
         """
@@ -663,7 +669,7 @@ class LineBuffer(LineSingle):
         return dtime < (dt + other)
 
     # 对比数据中的日期-时间是否小于等于数据中的日期+other的大小 - Cython深度优化
-    def tm_le(self, other, ago=0):
+    def tm_le(self, double other, int ago=0):
         """
         return numeric time part of datetimefloat
         """
@@ -678,7 +684,7 @@ class LineBuffer(LineSingle):
         return dtime <= (dt + other)
 
     # 对比数据中的日期-时间是否等于数据中的日期+other的大小 - Cython深度优化
-    def tm_eq(self, other, ago=0):
+    def tm_eq(self, double other, int ago=0):
         """
         return numeric time part of datetimefloat
         """
@@ -693,7 +699,7 @@ class LineBuffer(LineSingle):
         return dtime == (dt + other)
 
     # 对比数据中的日期-时间是否大于数据中的日期+other的大小 - Cython深度优化
-    def tm_gt(self, other, ago=0):
+    def tm_gt(self, double other, int ago=0):
         """
         return numeric time part of datetimefloat
         """
@@ -708,7 +714,7 @@ class LineBuffer(LineSingle):
         return dtime > (dt + other)
 
     # 对比数据中的日期-时间是否大于等于数据中的日期+other的大小 - Cython深度优化
-    def tm_ge(self, other, ago=0):
+    def tm_ge(self, double other, int ago=0):
         """
         return numeric time part of datetimefloat
         """
@@ -723,7 +729,7 @@ class LineBuffer(LineSingle):
         return dtime >= (dt + other)
 
     # 把时间转化成日期-时间的形式，浮点数 - Cython深度优化
-    def tm2dtime(self, tm, ago=0):
+    def tm2dtime(self, double tm, int ago=0):
         """
         Returns the given ``tm`` in the frame of the (ago bars) datatime.
 
@@ -733,7 +739,7 @@ class LineBuffer(LineSingle):
         return c_trunc(self.array[index]) + tm
 
     # 把时间转化成日期-时间的形式，时间格式 - Cython深度优化
-    def tm2datetime(self, tm, ago=0):
+    def tm2datetime(self, double tm, int ago=0):
         """
         Returns the given ``tm`` in the frame of the (ago bars) datatime.
 

@@ -364,7 +364,7 @@ def date2num(dt, tz=None):
 
 @cython.cdivision(True)
 @cython.boundscheck(False)  
-cpdef inline double time2num(tm):
+cpdef inline double time2num(object tm):
     """
     Converts the hour/minute/second/microsecond part of tm (datetime.datetime
     or time) to a num
