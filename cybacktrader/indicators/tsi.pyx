@@ -62,7 +62,7 @@ class TrueStrengthIndicator(bt.Indicator):
         self._sm12 = sm12
         self._sm22 = sm22
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：tsi = 100 * sm12 / sm22
         cdef int i, s = start, e = end
         cdef double[:] dst = self.lines.tsi.array

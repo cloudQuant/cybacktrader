@@ -37,6 +37,6 @@ class ZeroLagExponentialMovingAverage(MovingAverageBase):
 
         super(ZeroLagExponentialMovingAverage, self).__init__()
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：zlema is computed via underlying EMA; no extra loop needed
         pass

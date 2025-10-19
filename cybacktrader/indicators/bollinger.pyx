@@ -65,7 +65,7 @@ class BollingerBandsPct(BollingerBands):
         super(BollingerBandsPct, self).__init__()
         self.l.pctb = (self.data - self.l.bot) / (self.l.top - self.l.bot)
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：pctb = (data - bot) / (top - bot)
         cdef int i, s = start, e = end
         cdef double[:] dst = self.lines.pctb.array

@@ -111,7 +111,7 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
         return self._operationown_stage2(operation)
 
     # 改变lines去实施最小缓存计划
-    def qbuffer(self, savemem=0):
+    def qbuffer(self, int savemem=0):
         """Change the lines to implement a minimum size qbuffer scheme"""
         raise NotImplementedError
 
@@ -179,14 +179,14 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
         pass
 
     # 在最小周期迭代的时候调用preonce
-    def preonce(self, start, end):
+    def preonce(self, int start, int end):
         """
         It will be called during the "minperiod" phase of a "once" iteration
         """
         pass
 
     # 在最小周期结束的时候运行一次，调用once
-    def oncestart(self, start, end):
+    def oncestart(self, int start, int end):
         """
         It will be called when the minperiod phase is over for the 1st
         post-minperiod value
@@ -197,7 +197,7 @@ class LineRoot(with_metaclass(MetaLineRoot, object)):
         self.once(start, end)
 
     # 当最小周期迭代结束的时候调用用于计算结果
-    def once(self, start, end):
+    def once(self, int start, int end):
         """
         Called to calculate values at "once" when the minperiod is over
         
@@ -410,7 +410,7 @@ class LineMultiple(LineRoot):
         return self.lines[0]._makeoperationown(operation, _ownerskip)
 
     # 对多条line设置qbuffer - Cython优化
-    def qbuffer(self, savemem=0):
+    def qbuffer(self, int savemem=0):
         cdef object line
         for line in self.lines:
             line.qbuffer(savemem=1)

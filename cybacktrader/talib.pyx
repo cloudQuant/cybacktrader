@@ -181,11 +181,11 @@ else:
             setattr(clsmodule, str(name), newcls)  # add to module
 
         # oncestart
-        def oncestart(self, start, end):
+        def oncestart(self, int start, int end):
             pass  # if not ... a call with a single value to once will happen
 
         # 运行一次
-        def once(self, start, end):
+        def once(self, int start, int end):
             import array
 
             # prepare the data arrays - single shot

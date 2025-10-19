@@ -93,7 +93,7 @@ class DivByZero(Logic):
         
         self[0] = a_val / b_val if b_val != 0.0 else zero_val
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：除法保护
         cdef int i, s = start, e = end
         cdef double b, zero_val = self.zero
@@ -138,7 +138,7 @@ class DivZeroByZero(Logic):
         else:
             self[0] = a_val / b_val
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化：双零除法保护
         cdef int i, s = start, e = end
         cdef double a, b
@@ -171,7 +171,7 @@ class Cmp(Logic):
         
         self[0] = cmp_double(a_val, b_val)
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：比较操作
         cdef int i, s = start, e = end
         cdef double[:] dst = self.array
@@ -206,7 +206,7 @@ class CmpEx(Logic):
         else:
             self[0] = self.r2[0]
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：扩展比较
         cdef int i, s = start, e = end
         cdef double ai, bi
@@ -243,7 +243,7 @@ class If(Logic):
         
         self[0] = self.a[0] if cond_val != 0.0 else self.b[0]
 
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython深度优化 + 兼容性回退：优先使用 typed memoryviews，其次退回 Python 对象路径
         cdef int i, s = start, e = end
         cdef double[:] dst_d
@@ -290,7 +290,7 @@ class MultiLogic(Logic):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def once(self, start, end):
+    def once(self, int start, int end):
         # Cython优化：多逻辑
         cdef int i, j, n
         cdef list values
