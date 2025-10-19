@@ -93,3 +93,5 @@ ordered_compile.log
 *.bak
 
 benchmarks/performance_reports/
+benchmarks/benchmark_results.json
+benchmarks/ma_crossover_benchmark_results.png
