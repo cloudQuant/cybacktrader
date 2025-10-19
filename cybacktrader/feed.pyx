@@ -421,7 +421,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         self.tick_last = None
 
     # 如果tick_xxx相关的属性值是None的话，就要考虑使用bar的数据去填充 - Cython优化
-    def _tick_fill(self, force=False):
+    def _tick_fill(self, bint force=False):
         # If nothing filled the tick_xxx attributes, the bar is the tick
         cdef object lalias
         alias0 = self._getlinealias(0)
@@ -640,7 +640,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
         return False
 
     # 把bar的数据添加到self._barstack或者self._barstash中
-    def _add2stack(self, bar, stash=False):
+    def _add2stack(self, bar, bint stash=False):
         """Saves given bar (list of values) to the stack for later retrieval"""
         if not stash:
             self._barstack.append(bar)
@@ -648,7 +648,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             self._barstash.append(bar)
 
     # 获取bar的数据，保存到self._barstack或者self._barstash，并且提供了参数，可以删除bar
-    def _save2stack(self, erase=False, force=False, stash=False):
+    def _save2stack(self, bint erase=False, bint force=False, bint stash=False):
         """Saves current bar to the bar stack for later retrieval
 
         Parameter ``erase`` determines removal from the data stream
@@ -677,7 +677,7 @@ class AbstractDataBase(with_metaclass(MetaAbstractDataBase,
             line[0 + ago] = val
 
     # 从self._barstack或者self._barstash获取数据，然后保存到line中，如果成功，就返回True，如果不成功，返回False
-    def _fromstack(self, forward=False, stash=False):
+    def _fromstack(self, bint forward=False, bint stash=False):
         """Load a value from the stack onto the lines to form the new bar
 
         Returns True if values are present, False otherwise

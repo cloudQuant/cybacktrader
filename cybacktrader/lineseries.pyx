@@ -328,7 +328,7 @@ class Lines(object):
         for i in range(n):
             lines[i].forward(value, size=size)
 
-    def backwards(self, int size=1, force=False):
+    def backwards(self, int size=1, bint force=False):
         """
         Proxy line operation
         """
@@ -388,7 +388,7 @@ class Lines(object):
         for i in range(n):
             lines[i].advance(size)
 
-    def buflen(self, line=0):
+    def buflen(self, int line=0):
         """
         Proxy line operation
         """
@@ -831,16 +831,16 @@ class LineSeries(with_metaclass(MetaLineSeries, LineMultiple)):
     # LineSeriesStub (see below) already uses super
     
     # line的常规操作
-    def forward(self, value=NAN, size=1):
+    def forward(self, value=NAN, int size=1):
         self.lines.forward(value, size)
 
-    def backwards(self, size=1, force=False):
+    def backwards(self, int size=1, bint force=False):
         self.lines.backwards(size, force=force)
 
-    def rewind(self, size=1):
+    def rewind(self, int size=1):
         self.lines.rewind(size)
 
-    def extend(self, value=NAN, size=0):
+    def extend(self, value=NAN, int size=0):
         self.lines.extend(value, size)
 
     def reset(self):
