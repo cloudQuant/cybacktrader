@@ -2,6 +2,12 @@
 
 **Cython-accelerated, drop-in compatible interface for backtrader**
 
+## 总结
+
+1. 暂定为失败，性能只提高了20%-30%,远低于理想中的5-10倍。
+2. 现在是AI时代，大模型氛围编程，可以让一个项目进行下去，几天搞定一个项目很常见了。
+3. 失败是成功之母，看来还是得重构backtrader,去掉元编程技术。
+
 ## ⚡ 性能对比
 
 ![Performance Comparison](benchmarks/performance_comparison.png)
